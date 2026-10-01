@@ -2,12 +2,26 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil, Phone, UserPlus, Users } from "lucide-react";
 import { saveCustomerAction } from "@/lib/actions/catalog";
 import type { CatalogSnapshot, Customer } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Select, TextArea } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
+import { Panel } from "@/components/ui/panel";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export function CustomerManager({
   catalog,
@@ -35,6 +49,7 @@ export function CustomerManager({
     setNotes(customer.notes ?? "");
     setTypeId(customer.customer_type_id ?? "");
     setActive(customer.active);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function reset() {
@@ -49,94 +64,130 @@ export function CustomerManager({
   return (
     <div className="grid gap-5">
       {canWrite ? (
-        <form
-          className="grid gap-4 rounded-2xl border bg-card p-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setError(null);
-            setMessage(null);
-            startTransition(async () => {
-              const result = await saveCustomerAction({
-                id: editing?.id,
-                name,
-                phone,
-                notes,
-                customerTypeId: typeId,
-                active,
-              });
-              if (!result.ok) {
-                setError(result.message);
-                return;
-              }
-              setMessage(editing ? "Cliente atualizado." : "Cliente cadastrado.");
-              reset();
-              router.refresh();
-            });
-          }}
+        <Panel
+          title={editing ? "Editar cliente" : "Novo cliente"}
+          description={editing ? `Alterando ${editing.name}` : "Cadastro opcional, mas ajuda a escolher o preço certo"}
+          icon={UserPlus}
+          accent={Boolean(editing)}
         >
-          <h2 className="font-display text-xl">{editing ? "Editar cliente" : "Novo cliente"}</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Nome">
-              <Input className="h-12 rounded-xl text-base" value={name} onChange={(event) => setName(event.target.value)} required />
-            </Field>
-            <Field label="Telefone">
-              <Input className="h-12 rounded-xl text-base" value={phone} onChange={(event) => setPhone(event.target.value)} />
-            </Field>
-            <Field label="Tipo padrão">
-              <Select value={typeId} onChange={(event) => setTypeId(event.target.value)}>
-                <option value="">Sem tipo padrão</option>
-                {types.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Observações" className="md:col-span-2">
-              <TextArea value={notes} onChange={(event) => setNotes(event.target.value)} />
-            </Field>
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" className="h-12 rounded-xl" disabled={pending}>
-              {pending ? "Salvando..." : "Salvar cliente"}
-            </Button>
-            {editing ? (
-              <Button type="button" variant="ghost" className="h-12" onClick={reset}>
-                Cancelar
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setError(null);
+              setMessage(null);
+              startTransition(async () => {
+                const result = await saveCustomerAction({
+                  id: editing?.id,
+                  name,
+                  phone,
+                  notes,
+                  customerTypeId: typeId,
+                  active,
+                });
+                if (!result.ok) {
+                  setError(result.message);
+                  return;
+                }
+                setMessage(editing ? "Cliente atualizado." : "Cliente cadastrado.");
+                reset();
+                router.refresh();
+              });
+            }}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nome">
+                <Input className="h-12" value={name} onChange={(event) => setName(event.target.value)} required />
+              </Field>
+              <Field label="Telefone">
+                <Input className="h-12" value={phone} inputMode="tel" onChange={(event) => setPhone(event.target.value)} />
+              </Field>
+              <Field label="Tipo padrão">
+                <Select value={typeId} onChange={(event) => setTypeId(event.target.value)}>
+                  <option value="">Sem tipo padrão</option>
+                  {types.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Observações" className="md:col-span-2">
+                <TextArea value={notes} onChange={(event) => setNotes(event.target.value)} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" size="lg" disabled={pending}>
+                {pending ? "Salvando..." : "Salvar cliente"}
               </Button>
-            ) : null}
-          </div>
-        </form>
+              {editing ? (
+                <Button type="button" variant="ghost" size="lg" onClick={reset}>
+                  Cancelar
+                </Button>
+              ) : null}
+            </div>
+          </form>
+        </Panel>
       ) : null}
       {message ? <Notice tone="success">{message}</Notice> : null}
       {error ? <Notice>{error}</Notice> : null}
-      <div className="grid gap-3">
-        {catalog.customers.map((customer) => {
-          const type = catalog.customerTypes.find((item) => item.id === customer.customer_type_id);
-          return (
-            <article key={customer.id} className="rounded-2xl border bg-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold">
-                    {customer.name}
-                    {customer.active ? "" : " · inativo"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {customer.phone || "Sem telefone"}
-                    {type ? ` · ${type.name}` : ""}
-                  </p>
-                  {customer.notes ? <p className="mt-1 text-sm">{customer.notes}</p> : null}
-                </div>
-                {canWrite ? (
-                  <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={() => edit(customer)}>
-                    Editar
-                  </Button>
-                ) : null}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+
+      <Panel
+        title="Clientes cadastrados"
+        description={`${catalog.customers.length} cliente(s)`}
+        icon={Users}
+        bodyClassName="p-0"
+      >
+        {catalog.customers.length === 0 ? (
+          <div className="p-4">
+            <EmptyState title="Nenhum cliente cadastrado" description="Você pode vender só com o nome." />
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/70">
+            {catalog.customers.map((customer) => {
+              const type = catalog.customerTypes.find((item) => item.id === customer.customer_type_id);
+              return (
+                <li
+                  key={customer.id}
+                  className={cn(
+                    "flex items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5",
+                    !customer.active && "opacity-60",
+                  )}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 font-display text-xs font-bold text-primary">
+                    {initials(customer.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{customer.name}</p>
+                      {type ? <Badge variant="neutral">{type.name}</Badge> : null}
+                      {!customer.active ? <Badge variant="outline">inativo</Badge> : null}
+                    </div>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" />
+                      {customer.phone || "Sem telefone"}
+                    </p>
+                    {customer.notes ? <p className="mt-1 text-sm text-muted-foreground">{customer.notes}</p> : null}
+                  </div>
+                  {canWrite ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => edit(customer)}
+                      aria-label={`Editar ${customer.name}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Editar</span>
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

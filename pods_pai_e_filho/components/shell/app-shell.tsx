@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  Bookmark,
   Boxes,
   LayoutDashboard,
   LogOut,
@@ -14,22 +15,37 @@ import {
   Settings,
   Users,
   Wallet,
-  Bookmark,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BrandLockup, BrandMark } from "@/components/brand/logo";
 
 const sideNav = [
-  { href: "/inicio", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/produtos", label: "Produtos", icon: Boxes },
-  { href: "/estoque", label: "Estoque", icon: Package },
-  { href: "/vendas", label: "Vendas", icon: Receipt },
-  { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/fiados", label: "Fiados", icon: Bookmark },
-  { href: "/repasses", label: "Repasses", icon: Wallet },
-  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
+  {
+    label: "Operação",
+    items: [
+      { href: "/inicio", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/estoque", label: "Estoque", icon: Package },
+      { href: "/produtos", label: "Produtos", icon: Boxes },
+      { href: "/vendas", label: "Vendas", icon: Receipt },
+      { href: "/clientes", label: "Clientes", icon: Users },
+    ],
+  },
+  {
+    label: "Financeiro",
+    items: [
+      { href: "/repasses", label: "Repasses", icon: Wallet },
+      { href: "/fiados", label: "Fiados", icon: Bookmark },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
+      { href: "/configuracoes", label: "Configurações", icon: Settings },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -38,6 +54,15 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/inicio") return pathname === "/inicio";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 export function AppShell({
@@ -61,76 +86,131 @@ export function AppShell({
   const mobile = [
     { href: "/inicio", label: "Início", icon: LayoutDashboard },
     { href: "/estoque", label: "Estoque", icon: Package },
-    { href: saleHref, label: "Venda", icon: Plus, emphasis: true },
-    { href: "/repasses", label: "Repasses", icon: Wallet },
+    { href: saleHref, label: "Vender", icon: Plus, emphasis: true },
+    { href: "/repasses", label: "Financeiro", icon: Wallet },
     { href: "/mais", label: "Mais", icon: Menu },
   ];
 
   return (
-    <div className="min-h-dvh bg-background">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-card md:flex">
-        <div className="px-5 py-6">
-          <p className="font-display text-2xl leading-none text-primary">Pods</p>
-          <p className="mt-1 text-sm text-muted-foreground">Pai e Filho</p>
+    <div className="min-h-dvh">
+      {/* ---------------- Sidebar (desktop) ---------------- */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-[#0A0A0A]/95 backdrop-blur md:flex">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent" />
+
+        <div className="px-5 pb-4 pt-5">
+          <Link href="/inicio" className="block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+            <BrandLockup />
+          </Link>
+          <p className="brand-rules mt-3 w-full justify-center text-[9px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+            Sistema
+          </p>
         </div>
+
         {profile.can_write ? (
           <div className="px-4">
             <Link
               href="/vendas/nova"
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+              className="press flex h-11 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-foreground shadow-glow-sm transition-[box-shadow,background-color] hover:bg-primary-glow hover:shadow-glow"
             >
               <Plus className="h-4 w-4" />
               Nova venda
             </Link>
           </div>
         ) : null}
-        <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-3">
-          {sideNav.map((item) => {
-            const active = isActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium",
-                  active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:bg-muted",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+
+        <nav className="mt-4 flex-1 space-y-5 overflow-y-auto px-3 pb-4">
+          {sideNav.map((group) => (
+            <div key={group.label}>
+              <p className="eyebrow px-3 pb-2 text-[10px]">{group.label}</p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = isActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "group relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-[background-color,color] duration-150",
+                        active
+                          ? "bg-primary/10 text-foreground"
+                          : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary shadow-glow-sm transition-opacity",
+                          active ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 transition-colors",
+                          active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                        )}
+                      />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
-        <div className="border-t p-4">
-          <p className="truncate text-sm font-medium">{profile.full_name}</p>
-          <p className="truncate text-xs text-muted-foreground">{profile.role_name}</p>
+
+        <div className="border-t border-border p-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 font-display text-xs font-bold text-primary">
+              {initials(profile.full_name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{profile.full_name}</p>
+              <p className="truncate text-xs text-muted-foreground">{profile.role_name}</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={logout}
-            className="mt-3 flex h-10 items-center gap-2 text-sm text-muted-foreground"
+            className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-border text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-foreground"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Sair
           </button>
         </div>
       </aside>
 
+      {/* ---------------- Conteúdo ---------------- */}
       <div className="md:pl-64">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur md:hidden">
-          <div>
-            <p className="font-display text-xl leading-none text-primary">Pods</p>
-            <p className="text-xs text-muted-foreground">Pai e Filho</p>
+        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:hidden">
+          <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent" />
+          <div className="flex items-center justify-between px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+            <Link href="/inicio" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+              <BrandMark size={38} />
+            </Link>
+            <Link
+              href="/mais"
+              className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs"
+              aria-label="Perfil e mais opções"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded border border-primary/40 bg-primary/10 font-display text-[10px] font-bold text-primary">
+                {initials(profile.full_name)}
+              </span>
+              <span className="max-w-[7rem] truncate">{profile.full_name}</span>
+            </Link>
           </div>
-          <p className="max-w-[45%] truncate text-right text-sm">{profile.full_name}</p>
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 py-5 pb-28 md:px-8 md:py-8 md:pb-10">
-          {children}
+
+        <main className="mx-auto w-full max-w-6xl px-4 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-12">
+          <div key={pathname} className="animate-enter">
+            {children}
+          </div>
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur md:hidden">
+      {/* ---------------- Bottom nav (mobile) ---------------- */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
           {mobile.map((item) => {
             const active = item.emphasis
@@ -141,23 +221,27 @@ export function AppShell({
               <Link
                 key={item.label}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
+                  "press relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
                   item.emphasis && "-mt-4",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
+                {!item.emphasis && active ? (
+                  <span aria-hidden className="absolute top-0 h-[2px] w-8 bg-primary shadow-glow-sm" />
+                ) : null}
                 <span
                   className={cn(
-                    "flex items-center justify-center",
+                    "flex items-center justify-center transition-[box-shadow,background-color]",
                     item.emphasis
-                      ? "h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-md"
+                      ? "h-14 w-14 rounded-md border-2 border-background bg-primary text-primary-foreground shadow-glow"
                       : "h-6 w-6",
                   )}
                 >
-                  <Icon className={item.emphasis ? "h-5 w-5" : "h-5 w-5"} />
+                  <Icon className={item.emphasis ? "h-6 w-6" : "h-5 w-5"} strokeWidth={item.emphasis ? 2.5 : 2} />
                 </span>
-                {item.label}
+                <span className={cn(item.emphasis && "font-semibold text-foreground")}>{item.label}</span>
               </Link>
             );
           })}

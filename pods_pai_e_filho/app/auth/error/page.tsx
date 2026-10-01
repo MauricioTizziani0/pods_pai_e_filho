@@ -1,5 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { Suspense } from "react";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { Notice } from "@/components/feedback/notice";
+import { buttonVariants } from "@/components/ui/button";
+
+export const metadata = { title: "Erro" };
 
 async function ErrorContent({
   searchParams,
@@ -9,17 +14,9 @@ async function ErrorContent({
   const params = await searchParams;
 
   return (
-    <>
-      {params?.error ? (
-        <p className="text-sm text-muted-foreground">
-          Code error: {params.error}
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          An unspecified error occurred.
-        </p>
-      )}
-    </>
+    <Notice>
+      {params?.error ? <>Código do erro: {params.error}</> : <>Ocorreu um erro não especificado.</>}
+    </Notice>
   );
 }
 
@@ -29,23 +26,15 @@ export default function Page({
   searchParams: Promise<{ error: string }>;
 }) {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Sorry, something went wrong.
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense>
-                <ErrorContent searchParams={searchParams} />
-              </Suspense>
-            </CardContent>
-          </Card>
-        </div>
+    <AuthLayout title="Algo deu errado" description="Não foi possível concluir a autenticação.">
+      <div className="grid gap-4">
+        <Suspense>
+          <ErrorContent searchParams={searchParams} />
+        </Suspense>
+        <Link href="/auth/login" className={buttonVariants({ variant: "outline", size: "lg" })}>
+          Voltar para entrar
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

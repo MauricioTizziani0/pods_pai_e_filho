@@ -1,10 +1,29 @@
 import Link from "next/link";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  Clock,
+  HandCoins,
+  Package,
+  PiggyBank,
+  Receipt,
+  Send,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { getSessionState } from "@/lib/auth";
 import { loadDashboard } from "@/lib/data/dashboard";
 import { formatBRL, formatDate, resolvePeriod } from "@/lib/format";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
-import { PaymentBadge, CreditBadge } from "@/components/sales/badges";
+import { PaymentBadge, CreditBadge, StockBadge } from "@/components/sales/badges";
+import { StatCard } from "@/components/ui/stat-card";
+import { Panel } from "@/components/ui/panel";
+import { Badge } from "@/components/ui/badge";
+import { controlClass } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard" };
@@ -29,11 +48,15 @@ export default async function InicioPage({
     );
   }
 
+  const m = dashboard.metrics;
+  const n = (value: string | number) => Number(value ?? 0) || 0;
+
   const stockTotal = dashboard.stock.reduce((total, item) => total + item.quantity, 0);
   const byProduct = new Map<string, number>();
   for (const item of dashboard.stock) {
     byProduct.set(item.product_name, (byProduct.get(item.product_name) ?? 0) + item.quantity);
   }
+  const maxProduct = Math.max(1, ...byProduct.values());
   const low = dashboard.stock.filter(
     (item) =>
       item.product_active &&
@@ -41,109 +64,285 @@ export default async function InicioPage({
       item.quantity <= dashboard.lowStockThreshold,
   );
 
-  const cards = [
-    { label: "Dinheiro recebido", value: formatBRL(dashboard.metrics.money_received), tone: "default" },
-    { label: "A receber", value: formatBRL(dashboard.metrics.receivable), tone: "default" },
-    { label: "Lucro recebido", value: formatBRL(dashboard.metrics.profit_received), tone: "default" },
-    { label: "Lucro total", value: formatBRL(dashboard.metrics.profit_total), tone: "default" },
-    { label: "A enviar ao pai agora", value: formatBRL(dashboard.metrics.transfer_due_now), tone: "alert" },
-    { label: "Repasse futuro", value: formatBRL(dashboard.metrics.transfer_future), tone: "default" },
-    { label: "Repasse de vendas recebidas", value: formatBRL(dashboard.metrics.transfer_from_received), tone: "default" },
-    { label: "Repasse total vendido", value: formatBRL(dashboard.metrics.transfer_total), tone: "default" },
-  ];
+  // Total vendido no período = parte do pai + lucro (soma de total_amount das vendas válidas).
+  const soldTotal = n(m.transfer_total) + n(m.profit_total);
+  const transferShare = soldTotal > 0 ? (n(m.transfer_total) / soldTotal) * 100 : 0;
+  const profitShare = soldTotal > 0 ? (n(m.profit_total) / soldTotal) * 100 : 0;
+  const cashBase = n(m.money_received) + n(m.receivable);
+  const receivedShare = cashBase > 0 ? (n(m.money_received) / cashBase) * 100 : 0;
+  const receivableShare = cashBase > 0 ? (n(m.receivable) / cashBase) * 100 : 0;
 
   return (
     <div className="grid gap-6">
       <PageHeading
         title="Dashboard"
+        eyebrow="Painel de controle"
         description={period.label}
-        action={canWrite ? { href: "/vendas/nova", label: "Nova venda" } : undefined}
+        action={canWrite ? { href: "/vendas/nova", label: "Nova venda", icon: "plus" } : undefined}
       />
 
-      <form className="flex flex-wrap gap-2" method="get">
-        <PeriodLink current={params.periodo} value="" label="Tudo" />
-        <PeriodLink current={params.periodo} value="mes" label="Este mês" />
+      {/* Filtro de período */}
+      <form className="flex flex-wrap items-center gap-2" method="get">
+        <div className="segmented">
+          <PeriodLink current={params.periodo} value="" label="Tudo" />
+          <PeriodLink current={params.periodo} value="mes" label="Este mês" />
+        </div>
         <input type="hidden" name="periodo" value="personalizado" />
-        <input className="h-11 rounded-xl border bg-card px-3 text-sm" type="date" name="de" defaultValue={params.de ?? period.from ?? ""} />
-        <input className="h-11 rounded-xl border bg-card px-3 text-sm" type="date" name="ate" defaultValue={params.ate ?? period.to ?? ""} />
-        <button className="h-11 rounded-xl border bg-card px-4 text-sm font-medium" type="submit">
+        <input
+          className={cn(controlClass, "h-10 w-auto min-w-[9.5rem]")}
+          type="date"
+          name="de"
+          aria-label="De"
+          defaultValue={params.de ?? period.from ?? ""}
+        />
+        <input
+          className={cn(controlClass, "h-10 w-auto min-w-[9.5rem]")}
+          type="date"
+          name="ate"
+          aria-label="Até"
+          defaultValue={params.ate ?? period.to ?? ""}
+        />
+        <button className={cn(buttonVariants({ variant: "secondary" }), "h-10")} type="submit">
           Filtrar
         </button>
       </form>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {cards.map((card) => (
-          <article
-            key={card.label}
-            className={cn(
-              "rounded-2xl border bg-card p-4",
-              card.tone === "alert" && "border-orange-200 bg-orange-50",
-            )}
-          >
-            <p className="text-sm text-muted-foreground">{card.label}</p>
-            <p className="mt-2 text-xl font-semibold tabular-nums md:text-2xl">{card.value}</p>
-          </article>
-        ))}
+      {/* Indicadores principais */}
+      <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Estoque atual"
+          value={stockTotal}
+          kind="int"
+          suffix="un"
+          icon={Package}
+          tone={low.length > 0 ? "warning" : "success"}
+          hint={low.length > 0 ? `${low.length} sabor(es) em nível baixo` : "Todos acima do limite"}
+          href="/estoque"
+          accent
+        />
+        <StatCard
+          label="Vendas"
+          value={soldTotal}
+          icon={Receipt}
+          hint={`${m.sales_count} vendas · ${m.units_sold} unidades`}
+          href="/vendas"
+          accent
+        />
+        <StatCard
+          label="Lucro total"
+          value={n(m.profit_total)}
+          icon={TrendingUp}
+          tone="success"
+          hint={`Recebido: ${formatBRL(m.profit_received)}`}
+          accent
+        />
+        <StatCard
+          label="A enviar ao pai agora"
+          value={n(m.transfer_due_now)}
+          icon={Send}
+          featured
+          hint="Vendas recebidas ou fiadas com repasse pendente"
+          href="/repasses"
+        />
       </section>
 
-      <section className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-2xl border bg-card p-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="font-display text-2xl">Estoque</h2>
-              <p className="text-3xl font-semibold tabular-nums">{stockTotal} un</p>
-            </div>
-            <Link href="/estoque" className="text-sm font-medium text-primary">
-              Ver estoque
+      {/* Financeiro detalhado */}
+      <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <StatCard label="Dinheiro recebido" value={n(m.money_received)} icon={Banknote} tone="success" />
+        <StatCard
+          label="A receber · pendentes e fiados"
+          value={n(m.receivable)}
+          icon={Clock}
+          tone="warning"
+          href="/fiados"
+        />
+        <StatCard label="Lucro recebido" value={n(m.profit_received)} icon={PiggyBank} tone="success" />
+        <StatCard label="Valor do pai · total vendido" value={n(m.transfer_total)} icon={Wallet} />
+        <StatCard label="Repasse de vendas recebidas" value={n(m.transfer_from_received)} icon={HandCoins} />
+        <StatCard label="Repasse futuro" value={n(m.transfer_future)} icon={Clock} tone="info" />
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+        {/* Estoque por produto */}
+        <Panel
+          title="Estoque"
+          description={`${stockTotal} unidades em ${byProduct.size} produto(s)`}
+          icon={Package}
+          action={
+            <Link href="/estoque" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+              Ver estoque <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+          }
+        >
+          {byProduct.size === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum produto com estoque.</p>
+          ) : (
+            <ul className="grid gap-3">
+              {[...byProduct.entries()].map(([name, quantity]) => (
+                <li key={name} className="grid gap-1.5">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate font-medium">{name}</span>
+                    <span className="shrink-0 font-display font-semibold tabular-nums">{quantity} un</span>
+                  </div>
+                  <div className="bar-track">
+                    <div
+                      className={cn("bar-fill", quantity <= dashboard.lowStockThreshold && "bar-fill-muted")}
+                      style={{ width: `${Math.max(3, (quantity / maxProduct) * 100)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-4 grid gap-2 border-t border-border/70 pt-4">
+            {low.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-1.5 text-warning">
+                  <AlertTriangle className="h-4 w-4" /> Estoque baixo:
+                </span>
+                {low.map((item) => (
+                  <Badge key={item.variant_id} variant="warning">
+                    {item.product_name} {item.variant_name} · {item.quantity}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <StockBadge quantity={stockTotal} threshold={dashboard.lowStockThreshold} />
+                Nenhum sabor abaixo do limite.
+              </p>
+            )}
+            {dashboard.divergences.length > 0 ? (
+              <p className="flex items-center gap-2 text-sm text-warning">
+                <AlertTriangle className="h-4 w-4" />
+                {dashboard.divergences.length} divergência(s) na última conferência.
+                <Link href="/estoque/conferencia" className="underline underline-offset-4">
+                  Conferir
+                </Link>
+              </p>
+            ) : null}
           </div>
-          <ul className="mt-4 grid gap-2 text-sm">
-            {[...byProduct.entries()].map(([name, quantity]) => (
-              <li key={name} className="flex justify-between">
-                <span>{name}</span>
-                <span className="tabular-nums font-medium">{quantity}</span>
+        </Panel>
+
+        {/* Composição do dinheiro */}
+        <Panel title="Distribuição do período" description="Para onde vai o valor vendido" icon={Activity}>
+          {soldTotal <= 0 ? (
+            <p className="text-sm text-muted-foreground">Sem vendas neste recorte.</p>
+          ) : (
+            <div className="grid gap-5">
+              <div>
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Parte do pai × Lucro</span>
+                  <span className="tabular-nums">{formatBRL(soldTotal)}</span>
+                </div>
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary-deep to-primary"
+                    style={{ width: `${transferShare}%` }}
+                    title={`Parte do pai ${formatBRL(m.transfer_total)}`}
+                  />
+                  <div
+                    className="h-full bg-gradient-to-r from-success/70 to-success"
+                    style={{ width: `${profitShare}%` }}
+                    title={`Lucro ${formatBRL(m.profit_total)}`}
+                  />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <Legend color="bg-primary" label="Parte do pai" value={formatBRL(m.transfer_total)} pct={transferShare} />
+                  <Legend color="bg-success" label="Lucro" value={formatBRL(m.profit_total)} pct={profitShare} />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Recebido × A receber</span>
+                </div>
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="h-full bg-gradient-to-r from-success/70 to-success"
+                    style={{ width: `${receivedShare}%` }}
+                  />
+                  <div className="h-full bg-warning/80" style={{ width: `${receivableShare}%` }} />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <Legend color="bg-success" label="Recebido" value={formatBRL(m.money_received)} pct={receivedShare} />
+                  <Legend color="bg-warning" label="A receber" value={formatBRL(m.receivable)} pct={receivableShare} />
+                </div>
+              </div>
+            </div>
+          )}
+        </Panel>
+      </section>
+
+      {/* Movimentações recentes */}
+      <Panel
+        title="Movimentações recentes"
+        description={`${m.sales_count} vendas · ${m.units_sold} unidades no período`}
+        icon={Receipt}
+        action={
+          <Link href="/vendas" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+            Ver todas <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        }
+        bodyClassName="p-0"
+      >
+        {dashboard.sales.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">Nenhuma venda neste recorte.</p>
+        ) : (
+          <ul className="divide-y divide-border/70">
+            {dashboard.sales.map((sale) => (
+              <li key={sale.id}>
+                <Link
+                  href={`/vendas/${sale.id}`}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary/5"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground">
+                    <Receipt className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{sale.customer_name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {formatDate(sale.sale_date)} · {sale.items_label}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span>
+                    <span className="flex gap-1">
+                      <PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} />
+                      {sale.is_credit ? <CreditBadge /> : null}
+                    </span>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
-          {low.length > 0 ? (
-            <p className="mt-4 text-sm text-amber-900">
-              Estoque baixo: {low.map((item) => `${item.product_name} ${item.variant_name} (${item.quantity})`).join(", ")}
-            </p>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">Nenhum sabor abaixo do limite.</p>
-          )}
-          {dashboard.divergences.length > 0 ? (
-            <p className="mt-2 text-sm text-amber-900">
-              {dashboard.divergences.length} divergência(s) na última conferência.
-            </p>
-          ) : null}
-        </article>
+        )}
+      </Panel>
+    </div>
+  );
+}
 
-        <article className="rounded-2xl border bg-card p-4">
-          <h2 className="font-display text-2xl">Vendas do período</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {dashboard.metrics.sales_count} vendas · {dashboard.metrics.units_sold} unidades
-          </p>
-          <div className="mt-4 grid gap-3">
-            {dashboard.sales.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma venda neste recorte.</p>
-            ) : (
-              dashboard.sales.map((sale) => (
-                <Link key={sale.id} href={`/vendas/${sale.id}`} className="block">
-                  <p className="font-medium">{sale.customer_name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(sale.sale_date)} · {sale.items_label} · {formatBRL(sale.total_amount)}
-                  </p>
-                  <div className="mt-1 flex gap-1">
-                    <PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} />
-                    {sale.is_credit ? <CreditBadge /> : null}
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </article>
-      </section>
+function Legend({
+  color,
+  label,
+  value,
+  pct,
+}: {
+  color: string;
+  label: string;
+  value: string;
+  pct: number;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-sm", color)} />
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">
+          {label} · {pct.toFixed(0)}%
+        </p>
+        <p className="font-medium tabular-nums">{value}</p>
+      </div>
     </div>
   );
 }
@@ -160,13 +359,7 @@ function PeriodLink({
   const active = (current ?? "") === value || (!current && value === "");
   const href = value ? `/inicio?periodo=${value}` : "/inicio";
   return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex h-11 items-center rounded-xl px-4 text-sm font-medium",
-        active ? "bg-primary text-primary-foreground" : "border bg-card",
-      )}
-    >
+    <Link href={href} className="segmented-item min-h-8 px-3" data-active={active}>
       {label}
     </Link>
   );

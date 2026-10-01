@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export function StockCountForm({
   stock,
@@ -26,6 +28,10 @@ export function StockCountForm({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const divergent = rows.filter(
+    (item) => Number(physical[item.variant_id] ?? 0) - item.quantity !== 0,
+  ).length;
 
   return (
     <form
@@ -52,30 +58,55 @@ export function StockCountForm({
         });
       }}
     >
-      <div className="grid gap-3">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5 text-sm">
+        <span className="text-muted-foreground">{rows.length} sabores para conferir</span>
+        {divergent > 0 ? (
+          <Badge variant="warning" dot>
+            {divergent} divergência(s)
+          </Badge>
+        ) : (
+          <Badge variant="success">Tudo confere</Badge>
+        )}
+      </div>
+
+      <div className="stagger grid gap-3 md:grid-cols-2">
         {rows.map((item) => {
           const informed = Number(physical[item.variant_id] ?? 0);
           const difference = informed - item.quantity;
+          const ok = difference === 0;
           return (
-            <article key={item.variant_id} className="rounded-2xl border bg-card p-4">
+            <article
+              key={item.variant_id}
+              className={cn(
+                "tech-card p-4 transition-colors",
+                !ok && "border-warning/50",
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium">{item.product_name}</p>
-                  <p className="text-sm text-muted-foreground">{item.variant_name}</p>
+                <div className="min-w-0">
+                  <p className="eyebrow text-[10px]">{item.product_name}</p>
+                  <p className="truncate font-display font-semibold">{item.variant_name}</p>
                 </div>
-                <p className={difference === 0 ? "text-sm text-emerald-800" : "text-sm font-semibold text-amber-800"}>
-                  {difference === 0 ? "OK" : difference > 0 ? `+${difference}` : difference}
-                </p>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-md border px-2 py-0.5 font-display text-sm font-bold tabular-nums",
+                    ok
+                      ? "border-success/35 bg-success/10 text-success"
+                      : "border-warning/40 bg-warning/10 text-warning",
+                  )}
+                >
+                  {ok ? "OK" : difference > 0 ? `+${difference}` : difference}
+                </span>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Calculado</p>
-                  <p className="tabular-nums text-lg font-semibold">{item.quantity}</p>
+              <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+                <div className="rounded-md border border-border bg-surface px-3 py-2">
+                  <p className="eyebrow text-[10px]">Calculado</p>
+                  <p className="mt-1 font-display text-xl font-bold tabular-nums">{item.quantity}</p>
                 </div>
                 <label className="col-span-2">
-                  <span className="text-muted-foreground">Físico</span>
+                  <span className="eyebrow text-[10px]">Físico</span>
                   <Input
-                    className="mt-1 h-12 rounded-xl text-base"
+                    className="mt-1 h-12 font-display text-lg font-semibold"
                     inputMode="numeric"
                     min={0}
                     type="number"
@@ -90,35 +121,41 @@ export function StockCountForm({
           );
         })}
       </div>
-      <TextArea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Observação da conferência" />
+      <TextArea
+        value={notes}
+        onChange={(event) => setNotes(event.target.value)}
+        placeholder="Observação da conferência"
+      />
       {message ? <Notice tone="success">{message}</Notice> : null}
       {error ? <Notice>{error}</Notice> : null}
-      <Button type="submit" className="h-12 rounded-xl" disabled={!canWrite || pending}>
-        {pending ? "Salvando..." : "Registrar conferência"}
-      </Button>
-      {countId && canWrite ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 rounded-xl"
-          disabled={pending}
-          onClick={() => {
-            setError(null);
-            startTransition(async () => {
-              const result = await applyStockCountAction(countId);
-              if (!result.ok) {
-                setError(result.message);
-                return;
-              }
-              setMessage("Ajustes lançados. O estoque calculado foi alinhado à contagem.");
-              setCountId(null);
-              router.refresh();
-            });
-          }}
-        >
-          Lançar ajustes das divergências
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button type="submit" size="lg" disabled={!canWrite || pending}>
+          {pending ? "Salvando..." : "Registrar conferência"}
         </Button>
-      ) : null}
+        {countId && canWrite ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={pending}
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                const result = await applyStockCountAction(countId);
+                if (!result.ok) {
+                  setError(result.message);
+                  return;
+                }
+                setMessage("Ajustes lançados. O estoque calculado foi alinhado à contagem.");
+                setCountId(null);
+                router.refresh();
+              });
+            }}
+          >
+            Lançar ajustes das divergências
+          </Button>
+        ) : null}
+      </div>
     </form>
   );
 }

@@ -1,30 +1,25 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
+import { MailCheck } from "lucide-react";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { buttonVariants } from "@/components/ui/button";
+
+export const metadata = { title: "Conta criada" };
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Conta criada</CardTitle>
-              <CardDescription>Confira o e-mail se a confirmação estiver ligada</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Se o projeto exigir confirmação, abra o link enviado para o e-mail antes de entrar.
-                A primeira conta criada fica como administrador.
-              </p>
-            </CardContent>
-          </Card>
+    <AuthLayout title="Conta criada" description="Confira o e-mail se a confirmação estiver ligada.">
+      <div className="grid gap-4">
+        <div className="flex items-start gap-3 rounded-lg border border-success/35 bg-success/10 px-3 py-3 text-sm">
+          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+          <p className="leading-relaxed">
+            Se o projeto exigir confirmação, abra o link enviado para o e-mail antes de entrar. A primeira conta
+            criada fica como administrador.
+          </p>
         </div>
+        <Link href="/auth/login" className={buttonVariants({ variant: "outline", size: "lg" })}>
+          Ir para entrar
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

@@ -20,6 +20,7 @@ export default async function RepassesPage() {
     <div>
       <PageHeading
         title="Repasses"
+        eyebrow="Financeiro"
         description="A enviar agora junta venda recebida ou fiada cujo repasse ainda não foi pago."
       />
       {error && !error.ok ? (

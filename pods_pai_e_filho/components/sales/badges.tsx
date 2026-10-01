@@ -1,18 +1,4 @@
-import { cn } from "@/lib/utils";
-
-function Pill({
-  className,
-  children,
-}: {
-  className: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", className)}>
-      {children}
-    </span>
-  );
-}
+import { Badge } from "@/components/ui/badge";
 
 export function PaymentBadge({
   name,
@@ -23,13 +9,13 @@ export function PaymentBadge({
   received: boolean;
   cancelled?: boolean;
 }) {
-  if (cancelled) return <Pill className="bg-stone-200 text-stone-700">Cancelada</Pill>;
-  if (received) return <Pill className="bg-emerald-100 text-emerald-900">{name}</Pill>;
-  return <Pill className="bg-amber-100 text-amber-950">{name}</Pill>;
+  if (cancelled) return <Badge variant="neutral">Cancelada</Badge>;
+  if (received) return <Badge variant="success" dot>{name}</Badge>;
+  return <Badge variant="warning" dot>{name}</Badge>;
 }
 
 export function CreditBadge() {
-  return <Pill className="bg-rose-100 text-rose-900">Fiado</Pill>;
+  return <Badge variant="danger">Fiado</Badge>;
 }
 
 export function TransferBadge({
@@ -43,9 +29,15 @@ export function TransferBadge({
   future: boolean;
   cancelled?: boolean;
 }) {
-  if (cancelled) return <Pill className="bg-stone-200 text-stone-700">Sem efeito</Pill>;
-  if (paid) return <Pill className="bg-emerald-100 text-emerald-900">Repasse pago</Pill>;
-  if (dueNow) return <Pill className="bg-orange-100 text-orange-950">A enviar agora</Pill>;
-  if (future) return <Pill className="bg-sky-100 text-sky-950">Repasse futuro</Pill>;
-  return <Pill className="bg-stone-100 text-stone-700">Repasse</Pill>;
+  if (cancelled) return <Badge variant="neutral">Sem efeito</Badge>;
+  if (paid) return <Badge variant="success">Repassado</Badge>;
+  if (dueNow) return <Badge variant="danger" dot>A enviar agora</Badge>;
+  if (future) return <Badge variant="info">Repasse futuro</Badge>;
+  return <Badge variant="neutral">Repasse</Badge>;
+}
+
+export function StockBadge({ quantity, threshold }: { quantity: number; threshold: number }) {
+  if (quantity <= 0) return <Badge variant="danger">Sem estoque</Badge>;
+  if (quantity <= threshold) return <Badge variant="warning" dot>Estoque baixo</Badge>;
+  return <Badge variant="success">Em estoque</Badge>;
 }

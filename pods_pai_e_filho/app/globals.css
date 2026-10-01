@@ -2,50 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Pods - Pai e Filho · identidade visual
+  Dark mode permanente, vermelho da logo como cor principal.
+  Tons neon só em destaques; superfícies em grafite; texto claro.
+*/
 @layer base {
-  :root {
-    --background: 38 42% 95%;
-    --foreground: 160 14% 12%;
-    --card: 40 45% 98%;
-    --card-foreground: 160 14% 12%;
-    --popover: 40 45% 98%;
-    --popover-foreground: 160 14% 12%;
-    --primary: 158 48% 22%;
-    --primary-foreground: 40 40% 96%;
-    --secondary: 38 28% 91%;
-    --secondary-foreground: 160 14% 16%;
-    --muted: 38 24% 91%;
-    --muted-foreground: 160 8% 36%;
-    --accent: 36 40% 90%;
-    --accent-foreground: 160 14% 16%;
-    --destructive: 0 62% 42%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 36 18% 84%;
-    --input: 36 18% 84%;
-    --ring: 158 48% 22%;
-    --radius: 0.85rem;
-  }
-
+  :root,
   .dark {
-    --background: 160 14% 8%;
-    --foreground: 38 30% 94%;
-    --card: 160 12% 11%;
-    --card-foreground: 38 30% 94%;
-    --popover: 160 12% 11%;
-    --popover-foreground: 38 30% 94%;
-    --primary: 152 42% 62%;
-    --primary-foreground: 160 20% 10%;
-    --secondary: 160 8% 16%;
-    --secondary-foreground: 38 30% 94%;
-    --muted: 160 8% 16%;
-    --muted-foreground: 38 12% 70%;
-    --accent: 160 8% 16%;
-    --accent-foreground: 38 30% 94%;
-    --destructive: 0 55% 48%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 160 8% 20%;
-    --input: 160 8% 20%;
-    --ring: 152 42% 62%;
+    color-scheme: dark;
+
+    --background: 0 0% 3%; /* #080808 */
+    --foreground: 0 0% 93%; /* #EDEDED */
+
+    --card: 0 0% 7%; /* #121212 */
+    --card-foreground: 0 0% 93%;
+    --surface: 0 0% 9%; /* #171717 */
+    --surface-2: 0 0% 12%; /* #1F1F1F */
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 93%;
+
+    --primary: 359 100% 44%; /* #E00104 — vermelho extraído da logo */
+    --primary-foreground: 0 0% 100%;
+    --primary-deep: 359 90% 26%; /* sombra dos pods */
+    --primary-glow: 359 100% 54%; /* destaque / hover */
+
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 60%; /* #999999 */
+
+    --accent: 0 0% 13%;
+    --accent-foreground: 0 0% 96%;
+
+    --destructive: 359 90% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 65% 46%; /* verde: lucro, recebido, disponível */
+    --warning: 38 95% 56%; /* laranja/amarelo: atenção */
+    --info: 196 85% 56%; /* ciano: informação secundária */
+
+    --border: 0 0% 15%; /* #262626 */
+    --input: 0 0% 19%; /* #303030 */
+    --ring: 359 100% 44%;
+
+    --radius: 0.625rem;
   }
 }
 
@@ -53,12 +56,322 @@
   * {
     @apply border-border;
   }
+
+  html {
+    background-color: hsl(var(--background));
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-variant-numeric: tabular-nums;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
+
+  /* Camada de fundo: grade tecnológica discreta + brilho vermelho suave no topo. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(60rem 30rem at 15% -10%, hsl(var(--primary) / 0.14), transparent 60%),
+      radial-gradient(40rem 24rem at 100% 110%, hsl(var(--primary) / 0.07), transparent 60%),
+      linear-gradient(hsl(0 0% 100% / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.025) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      44px 44px,
+      44px 44px;
+    mask-image: linear-gradient(to bottom, black 0%, black 70%, hsl(0 0% 0% / 0.6) 100%);
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+    color: hsl(var(--foreground));
+  }
+
+  /* Controles nativos em dark */
+  select option,
+  select optgroup {
+    background-color: hsl(var(--surface));
+    color: hsl(var(--foreground));
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.55);
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground) / 0.8);
+  }
+
+  /* Scrollbar discreta */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 22%) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 22%);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.6);
+    background-clip: content-box;
   }
 }
 
-.font-display {
-  font-family: var(--font-fraunces), Georgia, serif;
+@layer components {
+  /* ---- Superfícies ------------------------------------------------------ */
+
+  .tech-card {
+    @apply relative rounded-lg border border-border bg-card text-card-foreground;
+    background-image: linear-gradient(180deg, hsl(0 0% 100% / 0.025), transparent 40%);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.03) inset,
+      0 10px 30px -18px hsl(0 0% 0% / 0.9);
+  }
+
+  /* Linha superior vermelha (cards importantes) */
+  .tech-card-accent::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: 2px;
+    width: 100%;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--primary-deep)),
+      hsl(var(--primary)) 45%,
+      hsl(var(--primary) / 0.15)
+    );
+  }
+
+  /* Card em destaque: borda e brilho vermelho discreto */
+  .tech-card-glow {
+    border-color: hsl(var(--primary) / 0.45);
+    background-image:
+      linear-gradient(135deg, hsl(var(--primary) / 0.14), transparent 55%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.02), transparent 40%);
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.12),
+      0 0 32px -10px hsl(var(--primary) / 0.55),
+      0 10px 30px -18px hsl(0 0% 0% / 0.9);
+  }
+
+  /* Cantos estilo HUD */
+  .hud-corners {
+    position: relative;
+  }
+  .hud-corners::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    pointer-events: none;
+    border-radius: calc(var(--radius) - 4px);
+    background:
+      linear-gradient(hsl(var(--primary)), hsl(var(--primary))) top left / 10px 1px no-repeat,
+      linear-gradient(hsl(var(--primary)), hsl(var(--primary))) top left / 1px 10px no-repeat,
+      linear-gradient(hsl(var(--primary)), hsl(var(--primary))) bottom right / 10px 1px no-repeat,
+      linear-gradient(hsl(var(--primary)), hsl(var(--primary))) bottom right / 1px 10px no-repeat;
+    opacity: 0.7;
+  }
+
+  /* Corte diagonal — o mesmo gesto dos recortes do P e do S da logo */
+  .diag-cut {
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  }
+  .brand-cut {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 9px),
+      calc(100% - 9px) 100%,
+      9px 100%,
+      0 calc(100% - 9px)
+    );
+  }
+
+  /* Divisor luminoso */
+  .divider-glow {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--primary) / 0.7) 20%,
+      hsl(var(--primary) / 0.7) 80%,
+      transparent
+    );
+  }
+
+  .glow-red {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.35),
+      0 0 24px -6px hsl(var(--primary) / 0.5);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 18px hsl(var(--primary) / 0.45);
+  }
+
+  /* Etiqueta pequena estilo HUD (eyebrow) */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  /* Traços vermelhos laterais — o mesmo recurso da logo em “— PAI E FILHO —” */
+  .brand-rules {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .brand-rules::before,
+  .brand-rules::after {
+    content: "";
+    width: 0.7rem;
+    height: 2px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 8px hsl(var(--primary) / 0.7);
+  }
+
+  /* ---- Tabelas ---------------------------------------------------------- */
+
+  .table-tech {
+    @apply w-full text-sm;
+  }
+  .table-tech thead th {
+    @apply bg-surface px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .table-tech tbody tr {
+    @apply transition-colors;
+    border-top: 1px solid hsl(var(--border) / 0.7);
+  }
+  .table-tech tbody tr:nth-child(even) {
+    background-color: hsl(0 0% 100% / 0.015);
+  }
+  .table-tech tbody tr:hover {
+    background-color: hsl(var(--primary) / 0.06);
+  }
+  .table-tech td {
+    @apply px-4 py-3 align-middle;
+  }
+
+  /* ---- Controle segmentado (abas / período) ----------------------------- */
+
+  .segmented {
+    @apply inline-flex items-center gap-1 rounded-md border border-border bg-surface p-1;
+  }
+  .segmented-item {
+    @apply inline-flex min-h-10 items-center justify-center rounded-sm px-3 text-sm font-medium text-muted-foreground transition-colors;
+  }
+  .segmented-item:hover {
+    color: hsl(var(--foreground));
+  }
+  .segmented-item[data-active="true"] {
+    @apply bg-primary text-primary-foreground;
+    box-shadow: 0 0 18px -6px hsl(var(--primary) / 0.8);
+  }
+
+  /* ---- Barras de progresso / mini-gráficos ------------------------------ */
+
+  .bar-track {
+    @apply h-2 w-full overflow-hidden rounded-full bg-surface-2;
+  }
+  .bar-fill {
+    @apply h-full rounded-full;
+    background: linear-gradient(90deg, hsl(var(--primary-deep)), hsl(var(--primary)));
+    box-shadow: 0 0 12px -2px hsl(var(--primary) / 0.7);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bar-fill-success {
+    background: linear-gradient(90deg, hsl(var(--success) / 0.7), hsl(var(--success)));
+    box-shadow: 0 0 12px -2px hsl(var(--success) / 0.6);
+  }
+  .bar-fill-muted {
+    background: hsl(0 0% 32%);
+    box-shadow: none;
+  }
+
+  /* ---- Animações -------------------------------------------------------- */
+
+  .animate-enter {
+    animation: enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > * {
+    animation: enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger > *:nth-child(5) { animation-delay: 160ms; }
+  .stagger > *:nth-child(6) { animation-delay: 200ms; }
+  .stagger > *:nth-child(7) { animation-delay: 240ms; }
+  .stagger > *:nth-child(8) { animation-delay: 280ms; }
+  .stagger > *:nth-child(n + 9) { animation-delay: 320ms; }
+
+  .press {
+    @apply transition-transform duration-150 active:scale-[0.98];
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter,
+  .stagger > *,
+  .bar-fill {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -45,7 +45,11 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div>
-      <PageHeading title="Configurações" description="Papéis, estoque baixo e cadastros que mudam o preço." />
+      <PageHeading
+        title="Configurações"
+        eyebrow="Sistema"
+        description="Papéis, estoque baixo e cadastros que mudam o preço."
+      />
       {error ? <Notice>{error.message}</Notice> : null}
       <SettingsPanel
         profile={session.profile}

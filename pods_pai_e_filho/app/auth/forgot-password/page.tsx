@@ -1,11 +1,15 @@
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
+import { AuthLayout } from "@/components/auth/auth-layout";
+
+export const metadata = { title: "Recuperar senha" };
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <ForgotPasswordForm />
-      </div>
-    </div>
+    <AuthLayout
+      title="Recuperar senha"
+      description="Informe o e-mail e enviaremos um link para redefinir a senha."
+    >
+      <ForgotPasswordForm />
+    </AuthLayout>
   );
 }

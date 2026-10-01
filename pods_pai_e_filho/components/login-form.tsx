@@ -1,25 +1,16 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
+import { Notice } from "@/components/feedback/notice";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,63 +39,51 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div>
-        <p className="font-display text-4xl text-primary">Pods</p>
-        <p className="text-sm text-muted-foreground">Pai e Filho</p>
+    <form onSubmit={handleLogin} className="grid gap-5">
+      <Field label="E-mail" htmlFor="email">
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          className="h-12"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+      </Field>
+      <div className="grid gap-1.5">
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Senha
+          </label>
+          <Link
+            href="/auth/forgot-password"
+            className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            Esqueci a senha
+          </Link>
+        </div>
+        <Input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          className="h-12"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
       </div>
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Entrar</CardTitle>
-          <CardDescription>Use o e-mail cadastrado para Maurício ou para o pai.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-5">
-              <div className="grid gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Senha</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto text-sm underline-offset-4 hover:underline"
-                  >
-                    Esqueci a senha
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </div>
-              {error ? <p className="text-sm text-red-700">{error}</p> : null}
-              <Button type="submit" className="h-12 rounded-xl text-base" disabled={isLoading}>
-                {isLoading ? "Entrando..." : "Entrar"}
-              </Button>
-            </div>
-            <p className="mt-4 text-center text-sm">
-              Ainda não tem acesso?{" "}
-              <Link href="/auth/sign-up" className="underline underline-offset-4">
-                Criar conta
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+      {error ? <Notice>{error}</Notice> : null}
+      <Button type="submit" size="lg" disabled={isLoading}>
+        <LogIn />
+        {isLoading ? "Entrando..." : "Entrar"}
+      </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        Ainda não tem acesso?{" "}
+        <Link href="/auth/sign-up" className="font-medium text-primary underline-offset-4 hover:underline">
+          Criar conta
+        </Link>
+      </p>
+    </form>
   );
 }

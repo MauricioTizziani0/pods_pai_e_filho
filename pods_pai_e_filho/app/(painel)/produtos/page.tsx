@@ -13,6 +13,7 @@ export default async function ProdutosPage() {
     <div>
       <PageHeading
         title="Produtos"
+        eyebrow="Catálogo e preços"
         description="Cada sabor tem estoque próprio. O lucro da tabela é preço menos repasse ao pai."
       />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : <ProductManager catalog={catalog.data} canWrite={canWrite} />}

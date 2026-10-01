@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getSessionState } from "@/lib/auth";
 import { loadCatalog } from "@/lib/data/catalog";
 import { Notice } from "@/components/feedback/notice";
+import { PageHeading } from "@/components/shell/page-heading";
 import { StockCountForm } from "@/components/stock/stock-count-form";
 
 export const metadata = { title: "Conferência" };
@@ -11,13 +11,12 @@ export default async function ConferenciaPage() {
   const canWrite = session.status === "ok" && session.profile.can_write;
   return (
     <div>
-      <Link href="/estoque" className="text-sm text-muted-foreground">
-        Voltar ao estoque
-      </Link>
-      <h1 className="mt-2 font-display text-3xl">Conferência</h1>
-      <p className="mt-2 mb-5 max-w-xl text-sm text-muted-foreground">
-        Compare o saldo calculado com a contagem física. A diferença não altera o estoque até você lançar o ajuste.
-      </p>
+      <PageHeading
+        title="Conferência"
+        eyebrow="Estoque"
+        back={{ href: "/estoque", label: "Voltar ao estoque" }}
+        description="Compare o saldo calculado com a contagem física. A diferença não altera o estoque até você lançar o ajuste."
+      />
       {!catalog.ok ? (
         <Notice>{catalog.message}</Notice>
       ) : (

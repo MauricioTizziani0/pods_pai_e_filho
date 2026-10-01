@@ -1,4 +1,4 @@
-const CACHE = "pods-static-v1";
+const CACHE = "pods-static-v3";
 const PRECACHE = ["/icons/icon-192.png", "/icons/icon-512.png", "/offline.html"];
 
 self.addEventListener("install", (event) => {

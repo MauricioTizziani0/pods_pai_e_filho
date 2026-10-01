@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { formatBRL, formatDate } from "@/lib/format";
 import type { SaleOverview } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,70 +17,86 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/70 text-left text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3 font-medium">Cliente</th>
-              <th className="px-4 py-3 font-medium">Produto</th>
-              <th className="px-4 py-3 font-medium">Qtd</th>
-              <th className="px-4 py-3 font-medium">Total</th>
-              <th className="px-4 py-3 font-medium">Situação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sales.map((sale) => (
-              <tr key={sale.id} className="border-t">
-                <td className="px-4 py-3">{formatDate(sale.sale_date)}</td>
-                <td className="px-4 py-3">
-                  <Link href={`/vendas/${sale.id}`} className="font-medium hover:underline">
-                    {sale.customer_name}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">{sale.customer_type_name}</p>
-                </td>
-                <td className="px-4 py-3">
-                  {sale.product_name} · {sale.variant_name}
-                </td>
-                <td className="px-4 py-3 tabular-nums">{sale.quantity}</td>
-                <td className="px-4 py-3 tabular-nums">{formatBRL(sale.total_amount)}</td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    <PaymentBadge
-                      name={sale.payment_status_name}
-                      received={sale.counts_as_received}
-                      cancelled={!sale.is_valid}
-                    />
-                    {sale.is_credit ? <CreditBadge /> : null}
-                    <TransferBadge
-                      paid={sale.transfer_paid}
-                      dueNow={sale.transfer_due_now}
-                      future={sale.transfer_is_future}
-                      cancelled={!sale.is_valid}
-                    />
-                  </div>
-                </td>
+      {/* Desktop: tabela */}
+      <div className="tech-card hidden overflow-hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="table-tech">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Produto</th>
+                <th className="text-right">Qtd</th>
+                <th className="text-right">Total</th>
+                <th className="text-right">Lucro</th>
+                <th>Situação</th>
+                <th className="w-10" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sales.map((sale) => (
+                <tr key={sale.id} className="group">
+                  <td className="whitespace-nowrap text-muted-foreground">{formatDate(sale.sale_date)}</td>
+                  <td>
+                    <Link href={`/vendas/${sale.id}`} className="font-medium hover:text-primary">
+                      {sale.customer_name}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{sale.customer_type_name}</p>
+                  </td>
+                  <td className="text-muted-foreground">
+                    {sale.product_name} · {sale.variant_name}
+                  </td>
+                  <td className="text-right tabular-nums">{sale.quantity}</td>
+                  <td className="text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</td>
+                  <td className="text-right tabular-nums text-success">{formatBRL(sale.profit_amount)}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      <PaymentBadge
+                        name={sale.payment_status_name}
+                        received={sale.counts_as_received}
+                        cancelled={!sale.is_valid}
+                      />
+                      {sale.is_credit ? <CreditBadge /> : null}
+                      <TransferBadge
+                        paid={sale.transfer_paid}
+                        dueNow={sale.transfer_due_now}
+                        future={sale.transfer_is_future}
+                        cancelled={!sale.is_valid}
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <Link
+                      href={`/vendas/${sale.id}`}
+                      aria-label={`Abrir venda de ${sale.customer_name}`}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="grid gap-3 md:hidden">
+      {/* Mobile: cards */}
+      <div className="stagger grid gap-3 md:hidden">
         {sales.map((sale) => (
           <Link
             key={sale.id}
             href={`/vendas/${sale.id}`}
-            className="rounded-2xl border bg-card p-4 shadow-sm"
+            className="tech-card press block p-4 transition-colors hover:border-primary/50"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold">{sale.customer_name}</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{sale.customer_name}</p>
+                <p className="text-xs text-muted-foreground">
                   {formatDate(sale.sale_date)} · {sale.product_name} · {sale.variant_name}
                 </p>
               </div>
-              <p className="tabular-nums font-semibold">{formatBRL(sale.total_amount)}</p>
+              <p className="shrink-0 font-display text-lg font-bold tabular-nums">{formatBRL(sale.total_amount)}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-1">
               <PaymentBadge
@@ -95,10 +112,20 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                 cancelled={!sale.is_valid}
               />
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {sale.quantity} un · lucro {formatBRL(sale.profit_amount)} · repasse{" "}
-              {formatBRL(sale.transfer_amount)}
-            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/70 pt-3 text-xs">
+              <span>
+                <span className="block text-muted-foreground">Qtd</span>
+                <span className="font-medium tabular-nums">{sale.quantity} un</span>
+              </span>
+              <span>
+                <span className="block text-muted-foreground">Lucro</span>
+                <span className="font-medium tabular-nums text-success">{formatBRL(sale.profit_amount)}</span>
+              </span>
+              <span>
+                <span className="block text-muted-foreground">Repasse</span>
+                <span className="font-medium tabular-nums">{formatBRL(sale.transfer_amount)}</span>
+              </span>
+            </div>
           </Link>
         ))}
       </div>

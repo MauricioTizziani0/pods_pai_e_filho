@@ -14,6 +14,8 @@ export default async function NovaVendaPage() {
     <div>
       <PageHeading
         title="Nova venda"
+        eyebrow="Registrar"
+        back={{ href: "/vendas", label: "Voltar às vendas" }}
         description="O preço e o repasse vêm da tabela atual. O lucro é calculado e fica gravado na venda."
       />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : <SaleForm catalog={catalog.data} canWrite={canWrite} />}

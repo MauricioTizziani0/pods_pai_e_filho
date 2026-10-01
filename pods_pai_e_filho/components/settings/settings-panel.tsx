@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { CreditCard, PackageSearch, Plus, ShieldCheck, Tags, Users } from "lucide-react";
 import {
   saveCustomerTypeAction,
   setLowStockThresholdAction,
@@ -12,6 +13,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Select } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
+import { Panel } from "@/components/ui/panel";
+import { Badge } from "@/components/ui/badge";
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export function SettingsPanel({
   profile,
@@ -48,78 +60,101 @@ export function SettingsPanel({
   }
 
   return (
-    <div className="grid gap-5">
-      <section className="rounded-2xl border bg-card p-4">
-        <h2 className="font-display text-xl">Seu acesso</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {profile.full_name} · {profile.role_name}
-          {profile.email ? ` · ${profile.email}` : ""}
-        </p>
-        <p className="mt-2 text-sm">
+    <div className="stagger grid gap-5">
+      <Panel title="Seu acesso" icon={ShieldCheck} accent>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 font-display text-sm font-bold text-primary">
+            {initials(profile.full_name)}
+          </span>
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 font-semibold">
+              {profile.full_name}
+              <Badge variant={profile.can_write ? "default" : "neutral"}>{profile.role_name}</Badge>
+            </p>
+            {profile.email ? <p className="truncate text-sm text-muted-foreground">{profile.email}</p> : null}
+          </div>
+        </div>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           Administrador registra produtos, estoque, vendas e repasses. Consulta apenas visualiza.
           O primeiro usuário cadastrado vira administrador.
         </p>
-      </section>
+      </Panel>
 
       {profile.can_write ? (
-        <form
-          className="grid gap-3 rounded-2xl border bg-card p-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            run(() => setLowStockThresholdAction(Number(limit)), "Limite de estoque baixo atualizado.");
-          }}
-        >
-          <Field label="Estoque baixo a partir de" hint="O dashboard destaca sabores com quantidade igual ou menor.">
-            <Input className="h-12 rounded-xl text-base" type="number" min={0} value={limit} onChange={(event) => setLimit(event.target.value)} />
-          </Field>
-          <Button type="submit" className="h-12 rounded-xl" disabled={pending}>
-            Salvar limite
-          </Button>
-        </form>
+        <Panel title="Estoque baixo" description="Limite usado nos alertas do dashboard" icon={PackageSearch}>
+          <form
+            className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end"
+            onSubmit={(event) => {
+              event.preventDefault();
+              run(() => setLowStockThresholdAction(Number(limit)), "Limite de estoque baixo atualizado.");
+            }}
+          >
+            <Field label="Estoque baixo a partir de" hint="O dashboard destaca sabores com quantidade igual ou menor.">
+              <Input
+                className="h-12 font-display text-lg font-semibold"
+                type="number"
+                min={0}
+                value={limit}
+                onChange={(event) => setLimit(event.target.value)}
+              />
+            </Field>
+            <Button type="submit" size="lg" disabled={pending}>
+              Salvar limite
+            </Button>
+          </form>
+        </Panel>
       ) : null}
 
-      <section className="grid gap-3 rounded-2xl border bg-card p-4">
-        <h2 className="font-display text-xl">Pessoas</h2>
-        {profiles.map((person) => (
-          <div key={person.id} className="grid gap-2 rounded-xl bg-muted/60 p-3 md:grid-cols-[1fr_12rem]">
-            <div>
-              <p className="font-medium">{person.full_name}</p>
-              <p className="text-sm text-muted-foreground">{person.email}</p>
-            </div>
-            {profile.can_write ? (
-              <Select
-                value={person.role_code}
-                disabled={pending}
-                onChange={(event) =>
-                  run(
-                    () => setUserRoleAction(person.id, event.target.value),
-                    "Papel atualizado.",
-                  )
-                }
-              >
-                <option value="admin">Administrador</option>
-                <option value="viewer">Consulta</option>
-              </Select>
-            ) : (
-              <p className="text-sm">{person.role_name}</p>
-            )}
-          </div>
-        ))}
-      </section>
+      <Panel title="Pessoas" description={`${profiles.length} usuário(s)`} icon={Users} bodyClassName="p-0">
+        <ul className="divide-y divide-border/70">
+          {profiles.map((person) => (
+            <li key={person.id} className="grid gap-2 px-4 py-3 md:grid-cols-[1fr_12rem] md:items-center">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface font-display text-xs font-bold text-muted-foreground">
+                  {initials(person.full_name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium">{person.full_name}</p>
+                  <p className="truncate text-sm text-muted-foreground">{person.email}</p>
+                </div>
+              </div>
+              {profile.can_write ? (
+                <Select
+                  className="h-11"
+                  value={person.role_code}
+                  disabled={pending}
+                  onChange={(event) =>
+                    run(
+                      () => setUserRoleAction(person.id, event.target.value),
+                      "Papel atualizado.",
+                    )
+                  }
+                >
+                  <option value="admin">Administrador</option>
+                  <option value="viewer">Consulta</option>
+                </Select>
+              ) : (
+                <Badge variant="neutral" className="w-fit">{person.role_name}</Badge>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
-      <section className="grid gap-3 rounded-2xl border bg-card p-4">
-        <h2 className="font-display text-xl">Tipos de cliente</h2>
-        <ul className="grid gap-1 text-sm">
+      <Panel title="Tipos de cliente" description="Cada tipo tem seu preço em Produtos" icon={Tags}>
+        <ul className="flex flex-wrap gap-2">
           {types.map((type) => (
             <li key={type.id}>
-              {type.name}
-              {type.active ? "" : " · inativo"}
+              <Badge variant={type.active ? "secondary" : "neutral"} className="h-8 px-3 text-xs normal-case tracking-normal">
+                {type.name}
+                {type.active ? "" : " · inativo"}
+              </Badge>
             </li>
           ))}
         </ul>
         {profile.can_write ? (
           <form
-            className="flex gap-2"
+            className="mt-4 flex gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               run(() => saveCustomerTypeAction(typeName), "Tipo de cliente criado. Defina os preços em Produtos.");
@@ -127,33 +162,41 @@ export function SettingsPanel({
             }}
           >
             <Input
-              className="h-12 rounded-xl text-base"
+              className="h-11"
               value={typeName}
               onChange={(event) => setTypeName(event.target.value)}
               placeholder="Novo tipo"
               required
             />
-            <Button type="submit" variant="outline" className="h-12 rounded-xl" disabled={pending}>
+            <Button type="submit" variant="outline" disabled={pending}>
+              <Plus />
               Adicionar
             </Button>
           </form>
         ) : null}
-      </section>
+      </Panel>
 
-      <section className="rounded-2xl border bg-card p-4">
-        <h2 className="font-display text-xl">Status de pagamento</h2>
-        <ul className="mt-3 grid gap-2 text-sm">
+      <Panel title="Status de pagamento" icon={CreditCard}>
+        <ul className="grid gap-2 text-sm">
           {statuses.map((status) => (
-            <li key={status.id} className="flex items-center justify-between gap-3">
-              <span>{status.name}</span>
-              <span className="text-muted-foreground">{status.active ? "Ativo" : "Preparado, inativo"}</span>
+            <li
+              key={status.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-surface px-3 py-2"
+            >
+              <span className="font-medium">{status.name}</span>
+              {status.active ? (
+                <Badge variant="success">Ativo</Badge>
+              ) : (
+                <Badge variant="neutral">Preparado, inativo</Badge>
+              )}
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Recebido e A receber entram nas vendas. Parcialmente recebido e Cancelado já existem no banco para uma evolução futura, sem alterar o fluxo atual.
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Recebido e A receber entram nas vendas. Parcialmente recebido e Cancelado já existem no banco para uma
+          evolução futura, sem alterar o fluxo atual.
         </p>
-      </section>
+      </Panel>
 
       {message ? <Notice tone="success">{message}</Notice> : null}
       {error ? <Notice>{error}</Notice> : null}

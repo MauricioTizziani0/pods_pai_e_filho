@@ -1,11 +1,12 @@
 import { UpdatePasswordForm } from "@/components/update-password-form";
+import { AuthLayout } from "@/components/auth/auth-layout";
+
+export const metadata = { title: "Nova senha" };
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <UpdatePasswordForm />
-      </div>
-    </div>
+    <AuthLayout title="Definir nova senha" description="Digite a nova senha para a sua conta.">
+      <UpdatePasswordForm />
+    </AuthLayout>
   );
 }

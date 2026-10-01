@@ -1,25 +1,16 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
+import { Notice } from "@/components/feedback/notice";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function SignUpForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function SignUpForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,76 +55,61 @@ export function SignUpForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div>
-        <p className="font-display text-4xl text-primary">Pods</p>
-        <p className="text-sm text-muted-foreground">Pai e Filho</p>
-      </div>
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Criar conta</CardTitle>
-          <CardDescription>A primeira conta vira administrador. As seguintes começam como consulta.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-5">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="repeat-password">Repetir senha</Label>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  className="h-12 rounded-xl text-base"
-                  required
-                  value={repeatPassword}
-                  onChange={(event) => setRepeatPassword(event.target.value)}
-                />
-              </div>
-              {error ? <p className="text-sm text-red-700">{error}</p> : null}
-              <Button type="submit" className="h-12 rounded-xl text-base" disabled={isLoading}>
-                {isLoading ? "Criando..." : "Criar conta"}
-              </Button>
-            </div>
-            <p className="mt-4 text-center text-sm">
-              Já tem conta?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Entrar
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <form onSubmit={handleSignUp} className="grid gap-5">
+      <Field label="Nome" htmlFor="name">
+        <Input
+          id="name"
+          autoComplete="name"
+          className="h-12"
+          required
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+        />
+      </Field>
+      <Field label="E-mail" htmlFor="email">
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          className="h-12"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+      </Field>
+      <Field label="Senha" htmlFor="password">
+        <Input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          className="h-12"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </Field>
+      <Field label="Repetir senha" htmlFor="repeat-password">
+        <Input
+          id="repeat-password"
+          type="password"
+          autoComplete="new-password"
+          className="h-12"
+          required
+          value={repeatPassword}
+          onChange={(event) => setRepeatPassword(event.target.value)}
+        />
+      </Field>
+      {error ? <Notice>{error}</Notice> : null}
+      <Button type="submit" size="lg" disabled={isLoading}>
+        <UserPlus />
+        {isLoading ? "Criando..." : "Criar conta"}
+      </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        Já tem conta?{" "}
+        <Link href="/auth/login" className="font-medium text-primary underline-offset-4 hover:underline">
+          Entrar
+        </Link>
+      </p>
+    </form>
   );
 }

@@ -13,6 +13,7 @@ export default async function ClientesPage() {
     <div>
       <PageHeading
         title="Clientes"
+        eyebrow="Cadastro"
         description="O cadastro é opcional. Na venda basta um nome."
       />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : <CustomerManager catalog={catalog.data} canWrite={canWrite} />}
