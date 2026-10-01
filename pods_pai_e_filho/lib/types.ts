@@ -33,6 +33,7 @@ export type Product = {
   model: string;
   approximate_puffs: number | null;
   active: boolean;
+  has_history?: boolean;
 };
 
 export type ProductVariant = {
@@ -40,6 +41,7 @@ export type ProductVariant = {
   product_id: string;
   name: string;
   active: boolean;
+  has_history?: boolean;
 };
 
 export type PriceRule = {

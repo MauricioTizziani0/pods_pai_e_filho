@@ -41,6 +41,12 @@ export async function saveProductAction(input: {
     active: input.active,
   };
 
+  if (input.id) {
+    const { data: previous, error: previousError } = await access.supabase
+      .from("products").select("name, brand, model, approximate_puffs, active").eq("id", input.id).single();
+    if (previousError) return { ok: false, message: dbErrorMessage(previousError) };
+  }
+
   const query = input.id
     ? access.supabase.from("products").update(payload).eq("id", input.id).select("id").single()
     : access.supabase.from("products").insert(payload).select("id").single();
@@ -48,6 +54,24 @@ export async function saveProductAction(input: {
   if (error) return { ok: false, message: dbErrorMessage(error) };
   revalidateCommerce();
   return { ok: true, id: data.id };
+}
+
+export async function deleteProductAction(productId: string): Promise<ActionResult> {
+  const access = await writerClient();
+  if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  const { error } = await access.supabase.rpc("delete_unused_product", { p_product_id: productId });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidateCommerce();
+  return { ok: true, id: productId };
+}
+
+export async function deleteVariantAction(variantId: string): Promise<ActionResult> {
+  const access = await writerClient();
+  if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  const { error } = await access.supabase.rpc("delete_unused_variant", { p_variant_id: variantId });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidateCommerce();
+  return { ok: true, id: variantId };
 }
 
 export async function saveVariantAction(input: {

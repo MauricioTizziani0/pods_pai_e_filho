@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Boxes, PackagePlus, Plus, Tag } from "lucide-react";
-import { savePriceAction, saveProductAction, saveVariantAction } from "@/lib/actions/catalog";
+import { Boxes, PackagePlus, Plus, Tag, Pencil, Trash2 } from "lucide-react";
+import { deleteProductAction, deleteVariantAction, savePriceAction, saveProductAction, saveVariantAction } from "@/lib/actions/catalog";
 import { formatBRL, moneyToInput } from "@/lib/format";
 import type { CatalogSnapshot, Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export function ProductManager({
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [puffs, setPuffs] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>, success: string) {
     setError(null);
@@ -100,8 +101,13 @@ export function ProductManager({
       {message ? <Notice tone="success">{message}</Notice> : null}
       {error ? <Notice>{error}</Notice> : null}
 
+      <div className="flex gap-2" role="group" aria-label="Filtrar produtos">
+        {([["all", "Todos"], ["active", "Ativos"], ["inactive", "Inativos"]] as const).map(([value, label]) => (
+          <Button key={value} variant={filter === value ? "secondary" : "ghost"} size="sm" onClick={() => setFilter(value)}>{label}</Button>
+        ))}
+      </div>
       <div className="stagger grid gap-4">
-        {catalog.products.map((product) => (
+        {catalog.products.filter((p) => filter === "all" || p.active === (filter === "active")).map((product) => (
           <ProductCard
             key={product.id}
             product={product}
@@ -110,6 +116,7 @@ export function ProductManager({
             canWrite={canWrite}
             pending={pending}
             onSave={run}
+            onDelete={(action, success) => run(action, success)}
           />
         ))}
       </div>
@@ -124,6 +131,7 @@ function ProductCard({
   canWrite,
   pending,
   onSave,
+  onDelete,
 }: {
   product: Product;
   catalog: CatalogSnapshot;
@@ -131,8 +139,15 @@ function ProductCard({
   canWrite: boolean;
   pending: boolean;
   onSave: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
+  onDelete: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
 }) {
   const [flavor, setFlavor] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(product.name);
+  const [brand, setBrand] = useState(product.brand);
+  const [model, setModel] = useState(product.model);
+  const [puffs, setPuffs] = useState(product.approximate_puffs?.toString() ?? "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const variants = catalog.variants.filter((variant) => variant.product_id === product.id);
   const stock = catalog.stock.filter((item) => item.product_id === product.id);
   const total = stock.reduce((sum, item) => sum + item.quantity, 0);
@@ -156,6 +171,15 @@ function ProductCard({
       }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
+        {editing ? (
+          <form className="grid gap-3 md:grid-cols-2 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); onSave(() => saveProductAction({ id: product.id, name, brand, model, approximatePuffs: puffs, active: product.active }), "Produto atualizado."); setEditing(false); }}>
+            <Field label="Nome"><Input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+            <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(e.target.value)} /></Field>
+            <Field label="Modelo"><Input value={model} onChange={(e) => setModel(e.target.value)} /></Field>
+            <Field label="Puffs aproximados"><Input inputMode="numeric" value={puffs} onChange={(e) => setPuffs(e.target.value)} /></Field>
+            <div className="flex gap-2"><Button type="submit" disabled={pending}>Salvar alterações</Button><Button type="button" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button></div>
+          </form>
+        ) : null}
         {/* Sabores */}
         <div>
           <p className="eyebrow mb-2">Sabores</p>
@@ -171,7 +195,20 @@ function ProductCard({
                     {variant.name}
                     {!variant.active ? <Badge variant="neutral">inativo</Badge> : null}
                   </span>
-                  <span className="font-display font-semibold tabular-nums">{quantity} un</span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-display font-semibold tabular-nums">{quantity} un</span>
+                    {canWrite ? <>
+                      <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => onSave(
+                        () => saveVariantAction({ id: variant.id, productId: product.id, name: variant.name, active: !variant.active }),
+                        variant.active ? "Sabor desativado." : "Sabor reativado.",
+                      )}>{variant.active ? "Desativar" : "Reativar"}</Button>
+                      {!variant.has_history ? <Button type="button" size="sm" variant="ghost" disabled={pending} aria-label={`Excluir ${variant.name}`} onClick={() => {
+                        if (window.confirm(`Excluir o sabor ${variant.name}? Esta ação não poderá ser desfeita.`)) {
+                          onSave(() => deleteVariantAction(variant.id), "Sabor excluído.");
+                        }
+                      }}><Trash2 /></Button> : null}
+                    </> : null}
+                  </span>
                 </div>
               );
             })}
@@ -237,8 +274,9 @@ function ProductCard({
       </div>
 
       {canWrite ? (
-        <div className="mt-4 flex justify-end border-t border-border/70 pt-3">
-          <Button
+        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border/70 pt-3">
+          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(!editing)}><Pencil />Editar</Button>
+          {product.has_history ? <Button
             type="button"
             variant="ghost"
             size="sm"
@@ -259,7 +297,17 @@ function ProductCard({
             }
           >
             {product.active ? "Inativar produto" : "Reativar produto"}
-          </Button>
+          </Button> : null}
+          {!product.has_history ? <Button type="button" variant="destructive" size="sm" disabled={pending} onClick={() => setConfirmDelete(true)}><Trash2 />Excluir</Button> : null}
+        </div>
+      ) : null}
+      {confirmDelete && !product.has_history ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmDelete(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby={`delete-title-${product.id}`} className="w-full max-w-md rounded-lg border border-border bg-background p-5 shadow-xl">
+            <h3 id={`delete-title-${product.id}`} className="font-display text-lg font-semibold">Excluir {product.name}?</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Este produto ainda não possui vendas ou movimentações e pode ser excluído permanentemente. O sistema verificará novamente antes de excluir.</p>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button><Button variant="destructive" disabled={pending} onClick={() => { setConfirmDelete(false); onDelete(() => deleteProductAction(product.id), "Produto excluído."); }}>Excluir produto</Button></div>
+          </section>
         </div>
       ) : null}
     </Panel>
