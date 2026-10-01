@@ -57,6 +57,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["var(--font-outfit)", "Segoe UI", "sans-serif"],
+        display: ["var(--font-fraunces)", "Georgia", "serif"],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

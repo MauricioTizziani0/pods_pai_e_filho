@@ -46,17 +46,24 @@ export async function updateSession(request: NextRequest) {
   // with the Supabase client, your users may be randomly logged out.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
+  const pathname = request.nextUrl.pathname;
+  const isPublic =
+    pathname === "/" ||
+    pathname.startsWith("/auth") ||
+    pathname === "/sw.js" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/offline.html";
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+    return redirectWithSession(url, supabaseResponse);
+  }
+
+  if (user && (pathname === "/auth/login" || pathname === "/auth/sign-up")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/inicio";
+    return redirectWithSession(url, supabaseResponse);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -73,4 +80,12 @@ export async function updateSession(request: NextRequest) {
   // of sync and terminate the user's session prematurely!
 
   return supabaseResponse;
+}
+
+function redirectWithSession(url: URL, supabaseResponse: NextResponse) {
+  const redirectResponse = NextResponse.redirect(url);
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+  return redirectResponse;
 }

@@ -1,23 +1,45 @@
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, Outfit } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { PwaRegister } from "@/components/pwa/pwa-register";
 import "./globals.css";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: {
+    default: "Pods - Pai e Filho",
+    template: "%s · Pods",
+  },
+  description: "Estoque, vendas, lucro e repasses da sociedade entre pai e filho.",
+  applicationName: "Pods - Pai e Filho",
+  appleWebApp: {
+    capable: true,
+    title: "Pods",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  display: "swap",
-  subsets: ["latin"],
-});
+export const viewport: Viewport = {
+  themeColor: "#1d4a32",
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default function RootLayout({
   children,
@@ -25,15 +47,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${outfit.className} ${fraunces.variable} antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
+          <PwaRegister />
         </ThemeProvider>
       </body>
     </html>

@@ -26,82 +26,82 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError("E-mail ou senha incorretos.");
       setIsLoading(false);
+      return;
     }
+
+    router.push("/inicio");
+    router.refresh();
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <div>
+        <p className="font-display text-4xl text-primary">Pods</p>
+        <p className="text-sm text-muted-foreground">Pai e Filho</p>
+      </div>
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
+          <CardTitle className="text-2xl">Entrar</CardTitle>
+          <CardDescription>Use o e-mail cadastrado para Maurício ou para o pai.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  className="h-12 rounded-xl text-base"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                 />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Senha</Label>
                   <Link
                     href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    className="ml-auto text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    Esqueci a senha
                   </Link>
                 </div>
                 <Input
                   id="password"
                   type="password"
+                  className="h-12 rounded-xl text-base"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+              {error ? <p className="text-sm text-red-700">{error}</p> : null}
+              <Button type="submit" className="h-12 rounded-xl text-base" disabled={isLoading}>
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                Sign up
+            <p className="mt-4 text-center text-sm">
+              Ainda não tem acesso?{" "}
+              <Link href="/auth/sign-up" className="underline underline-offset-4">
+                Criar conta
               </Link>
-            </div>
+            </p>
           </form>
         </CardContent>
       </Card>

@@ -20,6 +20,7 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -27,91 +28,109 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async (event: React.FormEvent) => {
+    event.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("As senhas não conferem.");
+      setIsLoading(false);
+      return;
+    }
+    if (password.length < 6) {
+      setError("Use uma senha com pelo menos 6 caracteres.");
       setIsLoading(false);
       return;
     }
 
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
-        },
-      });
-      if (error) throw error;
-      router.push("/auth/sign-up-success");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/inicio`,
+        data: { full_name: fullName.trim() },
+      },
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
       setIsLoading(false);
+      return;
     }
+
+    router.push("/auth/sign-up-success");
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <div>
+        <p className="font-display text-4xl text-primary">Pods</p>
+        <p className="text-sm text-muted-foreground">Pai e Filho</p>
+      </div>
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl">Criar conta</CardTitle>
+          <CardDescription>A primeira conta vira administrador. As seguintes começam como consulta.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  className="h-12 rounded-xl text-base"
+                  required
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  className="h-12 rounded-xl text-base"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
+                <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
                   type="password"
+                  className="h-12 rounded-xl text-base"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
+                <Label htmlFor="repeat-password">Repetir senha</Label>
                 <Input
                   id="repeat-password"
                   type="password"
+                  className="h-12 rounded-xl text-base"
                   required
                   value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  onChange={(event) => setRepeatPassword(event.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
+              {error ? <p className="text-sm text-red-700">{error}</p> : null}
+              <Button type="submit" className="h-12 rounded-xl text-base" disabled={isLoading}>
+                {isLoading ? "Criando..." : "Criar conta"}
               </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
+            <p className="mt-4 text-center text-sm">
+              Já tem conta?{" "}
               <Link href="/auth/login" className="underline underline-offset-4">
-                Login
+                Entrar
               </Link>
-            </div>
+            </p>
           </form>
         </CardContent>
       </Card>
