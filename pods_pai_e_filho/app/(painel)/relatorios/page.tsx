@@ -49,7 +49,7 @@ export default async function RelatoriosPage({
   const field = cn(controlClass, "h-11");
 
   return (
-    <div className="grid gap-6">
+    <div className="grid w-full min-w-0 gap-6">
       <PageHeading title="Relatórios" eyebrow="Análise" description={period.label} />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : null}
       {error ? <Notice>{error.message}</Notice> : null}
@@ -58,12 +58,12 @@ export default async function RelatoriosPage({
         <p className="eyebrow flex items-center gap-1.5">
           <Filter className="h-3 w-3" /> Filtros
         </p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
           <input type="hidden" name="periodo" value="personalizado" />
           <input className={field} type="date" name="de" defaultValue={params.de ?? ""} aria-label="De" />
           <input className={field} type="date" name="ate" defaultValue={params.ate ?? ""} aria-label="Até" />
           <input
-            className={cn(field, "col-span-2")}
+            className={cn(field, "sm:col-span-2")}
             name="cliente"
             placeholder="Cliente"
             defaultValue={params.cliente ?? ""}
@@ -113,7 +113,7 @@ export default async function RelatoriosPage({
             defaultValue={params.sabor ?? ""}
             aria-label="Sabor"
           />
-          <button className={cn(buttonVariants(), "col-span-2 h-11 md:col-span-4")} type="submit">
+          <button className={cn(buttonVariants(), "h-11 w-full sm:col-span-2 md:col-span-4")} type="submit">
             Atualizar
           </button>
         </div>
@@ -152,12 +152,63 @@ function ReportTable({
   const maxRevenue = Math.max(1, ...rows.map((row) => Number(row.revenue)));
 
   return (
-    <section className="tech-card tech-card-accent overflow-hidden">
-      <header className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5">
-        <h2 className="font-display text-base font-semibold md:text-lg">{title}</h2>
-        <span className="text-xs text-muted-foreground">{rows.length} linha(s)</span>
+    <section className="tech-card tech-card-accent min-w-0 overflow-hidden">
+      <header className="flex min-w-0 items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5">
+        <h2 className="min-w-0 break-words font-display text-base font-semibold md:text-lg">{title}</h2>
+        <span className="shrink-0 text-xs text-muted-foreground">{rows.length} linha(s)</span>
       </header>
-      <div className="overflow-x-auto">
+
+      <ul className="grid divide-y divide-border/70 md:hidden">
+        {rows.length === 0 ? (
+          <li className="px-4 py-6 text-center text-sm text-muted-foreground">Sem dados para este recorte.</li>
+        ) : null}
+        {rows.map((row) => {
+          const share = (Number(row.revenue) / maxRevenue) * 100;
+          return (
+            <li key={row.name} className="grid min-w-0 gap-2 px-4 py-3">
+              <p className="min-w-0 break-words font-medium">{row.name}</p>
+              <div className="bar-track h-1">
+                <div className="bar-fill" style={{ width: `${Math.max(2, share)}%` }} />
+              </div>
+              <dl className="grid grid-cols-2 gap-2 text-xs">
+                <div className="min-w-0">
+                  <dt className="text-muted-foreground">Qtd</dt>
+                  <dd className="font-medium tabular-nums">{row.quantity}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-muted-foreground">Faturamento</dt>
+                  <dd className="break-words font-medium tabular-nums">{formatBRL(row.revenue)}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-muted-foreground">Repasse</dt>
+                  <dd className="break-words tabular-nums text-muted-foreground">{formatBRL(row.transfer)}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-muted-foreground">Lucro</dt>
+                  <dd className="break-words font-medium tabular-nums text-success">{formatBRL(row.profit)}</dd>
+                </div>
+                {showStock ? (
+                  <div className="min-w-0">
+                    <dt className="text-muted-foreground">Estoque</dt>
+                    <dd className="font-medium tabular-nums">{row.stock ?? 0}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </li>
+          );
+        })}
+        {rows.length > 1 ? (
+          <li className="grid grid-cols-2 gap-2 bg-surface/60 px-4 py-3 text-xs">
+            <p className="col-span-2 eyebrow">Total</p>
+            <span className="tabular-nums">{totals.quantity} un</span>
+            <span className="break-words text-right font-medium tabular-nums">{formatBRL(totals.revenue)}</span>
+            <span className="break-words tabular-nums text-muted-foreground">{formatBRL(totals.transfer)}</span>
+            <span className="break-words text-right font-medium tabular-nums text-success">{formatBRL(totals.profit)}</span>
+          </li>
+        ) : null}
+      </ul>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="table-tech min-w-[40rem]">
           <thead>
             <tr>

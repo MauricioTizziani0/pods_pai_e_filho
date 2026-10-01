@@ -11,7 +11,7 @@ export function SystemScreen({
   children: React.ReactNode;
 }) {
   return (
-    <main className="relative mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-6 py-10">
+    <main className="relative mx-auto flex min-h-dvh w-full min-w-0 max-w-lg flex-col justify-center gap-4 px-4 py-10 sm:px-6">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent"

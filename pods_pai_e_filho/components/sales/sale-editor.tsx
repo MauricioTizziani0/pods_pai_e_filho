@@ -82,7 +82,7 @@ export function SaleEditor({
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid w-full min-w-0 gap-5">
       {/* Resumo da venda */}
       <section className={cn("tech-card tech-card-accent p-4", !sale.is_valid && "opacity-80")}>
         <div className="flex flex-wrap gap-1.5">
@@ -99,7 +99,7 @@ export function SaleEditor({
             cancelled={!sale.is_valid}
           />
         </div>
-        <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           <Money label="Total" value={sale.total_amount} large />
           <Money label="Parte do pai" value={sale.transfer_amount} tone="text-primary" />
           <Money label="Lucro" value={sale.profit_amount} tone="text-success" />
@@ -220,7 +220,7 @@ export function SaleEditor({
               <Field label="Venda fiada" hint="Só altera o repasse enquanto a venda está a receber.">
                 <label
                   className={cn(
-                    "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
+                    "flex min-h-12 min-w-0 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
                     fiadoChecked
                       ? "border-primary/60 bg-primary/10 shadow-glow-sm"
                       : "border-input hover:border-primary/40",
@@ -275,7 +275,7 @@ export function SaleEditor({
       {canWrite && sale.is_valid ? (
         <section className="tech-card border-primary/30 p-4">
           {!confirmCancel ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertTriangle className="h-4 w-4 text-primary" />
                 Cancelar devolve o estoque e tira os valores dos indicadores.
@@ -349,12 +349,12 @@ function Money({
   large?: boolean;
 }) {
   return (
-    <div className="rounded-md border border-border/70 bg-surface px-3 py-2.5">
+    <div className="min-w-0 rounded-md border border-border/70 bg-surface px-3 py-2.5">
       <dt className="eyebrow text-[10px]">{label}</dt>
       <dd
         className={cn(
-          "mt-1 font-display font-bold tabular-nums",
-          large ? "text-2xl glow-text" : "text-lg",
+          "mt-1 break-words font-display font-bold tabular-nums",
+          large ? "text-xl glow-text sm:text-2xl" : "text-base sm:text-lg",
           tone,
         )}
       >

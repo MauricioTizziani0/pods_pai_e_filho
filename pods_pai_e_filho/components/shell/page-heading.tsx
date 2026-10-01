@@ -31,18 +31,18 @@ export function PageHeading({
           {back.label}
         </Link>
       ) : null}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
           {eyebrow ? <p className="brand-rules eyebrow mb-1.5 text-primary">{eyebrow}</p> : null}
-          <h1 className="relative font-display text-2xl font-bold leading-none tracking-tight md:text-3xl">
+          <h1 className="relative break-words font-display text-2xl font-bold leading-none tracking-tight md:text-3xl">
             <span aria-hidden className="absolute -left-3 top-1 hidden h-[0.9em] w-[3px] rounded-full bg-primary shadow-glow-sm md:block" />
             {title}
           </h1>
           {description ? (
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-xl break-words text-sm leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {children}
           {action ? (
             <Link href={action.href} className={cn(buttonVariants({ size: "default" }), "press")}>

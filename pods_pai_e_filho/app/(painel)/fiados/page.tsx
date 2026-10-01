@@ -20,14 +20,14 @@ export default async function FiadosPage() {
     : { receivable: 0, transfer: 0 };
 
   return (
-    <div className="grid gap-5">
+    <div className="grid w-full min-w-0 gap-5">
       <PageHeading
         title="Fiados"
         eyebrow="Financeiro"
         description="Vendas a receber em que a parte do pai já entrou em “A enviar agora”."
       />
       {sales.ok ? (
-        <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Fiados em aberto" value={sales.sales.length} kind="int" icon={Bookmark} tone="warning" />
           <StatCard label="A receber dos clientes" value={totals.receivable} icon={Clock} tone="warning" />
           <StatCard
@@ -36,7 +36,7 @@ export default async function FiadosPage() {
             icon={Send}
             tone="primary"
             hint="Parte destes fiados ainda em “A enviar ao pai agora”"
-            className="col-span-2 lg:col-span-1"
+            className="sm:col-span-2 lg:col-span-1"
           />
         </section>
       ) : null}

@@ -10,7 +10,7 @@ export default async function ProdutosPage() {
   const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
   const canWrite = session.status === "ok" && session.profile.can_write;
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title="Produtos"
         eyebrow="Catálogo e preços"

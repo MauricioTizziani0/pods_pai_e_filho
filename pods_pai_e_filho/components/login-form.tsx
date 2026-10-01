@@ -52,7 +52,7 @@ export function LoginForm() {
         />
       </Field>
       <div className="grid gap-1.5">
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-center justify-between">
           <label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Senha
           </label>

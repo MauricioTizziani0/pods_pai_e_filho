@@ -86,7 +86,7 @@ export default async function EstoquePage({
   const field = cn(controlClass, "h-11");
 
   return (
-    <div className="grid gap-6">
+    <div className="grid w-full min-w-0 gap-6">
       <PageHeading
         title="Estoque"
         eyebrow={`${total} unidades`}
@@ -94,20 +94,20 @@ export default async function EstoquePage({
         action={{ href: "/estoque/conferencia", label: "Conferir" }}
       />
 
-      <form className="tech-card grid gap-2 p-3 md:p-4" method="get">
+      <form className="tech-card grid w-full min-w-0 gap-2 p-3 md:p-4" method="get">
         <p className="eyebrow flex items-center gap-1.5">
           <Filter className="h-3 w-3" /> Filtros
         </p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
           <input
-            className={cn(field, "col-span-2")}
+            className={cn(field, "sm:col-span-2")}
             name="sabor"
             placeholder="Pesquisar sabor (ex.: Grape Ice)"
             defaultValue={params.sabor ?? ""}
             aria-label="Pesquisar sabor"
           />
           <IceFilterSelect defaultValue={params.ice} />
-          <button className={cn(buttonVariants(), "h-11")} type="submit">
+          <button className={cn(buttonVariants(), "h-11 w-full")} type="submit">
             Filtrar
           </button>
         </div>
@@ -138,20 +138,20 @@ export default async function EstoquePage({
               }
             >
               {items.length > 0 ? (
-                <ul className="grid gap-3">
+                <ul className="grid min-w-0 gap-3">
                   {items.map((item) => (
-                    <li key={item.variant_id} className="grid gap-1.5">
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span className="truncate">{item.variant_name}</span>
-                          {item.variant_is_ice ? <IceBadge /> : <span className="text-xs text-muted-foreground">Normal</span>}
+                    <li key={item.variant_id} className="grid min-w-0 gap-1.5">
+                      <div className="flex min-w-0 items-start justify-between gap-2 text-sm">
+                        <span className="flex min-w-0 flex-1 items-start gap-2">
+                          <span className="min-w-0 break-words">{item.variant_name}</span>
+                          {item.variant_is_ice ? <IceBadge /> : <span className="shrink-0 text-xs text-muted-foreground">Normal</span>}
                           {!item.variant_active ? <Badge variant="neutral">inativo</Badge> : null}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
                           <VariantAvailabilityBadge quantity={item.quantity} />
                           <span
                             className={cn(
-                              "w-8 text-right font-display font-semibold tabular-nums",
+                              "min-w-6 text-right font-display font-semibold tabular-nums",
                               item.quantity <= 0 && "text-danger",
                             )}
                           >
@@ -199,7 +199,7 @@ export default async function EstoquePage({
             {((movements ?? []) as StockMovement[]).map((movement) => {
               const positive = movement.direction > 0;
               return (
-                <li key={movement.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                <li key={movement.id} className="flex min-w-0 items-center gap-3 px-4 py-3 text-sm">
                   <span
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border",
@@ -211,10 +211,10 @@ export default async function EstoquePage({
                     {positive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
+                    <p className="break-words font-medium">
                       {movement.product_name} · {movement.variant_name}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="break-words text-xs text-muted-foreground">
                       {movement.movement_name} · {formatDate(movement.movement_date)}
                       {movement.user_name ? ` · ${movement.user_name}` : ""}
                       {movement.sale_id ? (

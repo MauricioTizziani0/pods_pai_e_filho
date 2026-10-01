@@ -16,7 +16,7 @@ export function Field({
   className?: string;
 }) {
   return (
-    <div className={cn("grid gap-1.5", className)}>
+    <div className={cn("grid min-w-0 gap-1.5", className)}>
       <Label htmlFor={htmlFor} className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </Label>
@@ -28,11 +28,11 @@ export function Field({
 
 /** Classe compartilhada por inputs, selects e textareas nativos (filtros, formulários). */
 const controlClass =
-  "flex h-12 w-full rounded-md border border-input bg-surface px-3 text-base text-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.02)] outline-none transition-[border-color,box-shadow,background-color] duration-150 placeholder:text-muted-foreground/80 hover:bg-surface-2 focus-visible:border-primary focus-visible:shadow-glow-sm focus-visible:ring-1 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
+  "flex h-12 w-full min-w-0 max-w-full rounded-md border border-input bg-surface px-3 text-base text-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.02)] outline-none transition-[border-color,box-shadow,background-color] duration-150 placeholder:text-muted-foreground/80 hover:bg-surface-2 focus-visible:border-primary focus-visible:shadow-glow-sm focus-visible:ring-1 focus-visible:ring-primary/60 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
 
 export function Select({ className, ...props }: React.ComponentProps<"select">) {
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0">
       <select className={cn(controlClass, "appearance-none pr-10", className)} {...props} />
       <ChevronDown
         aria-hidden

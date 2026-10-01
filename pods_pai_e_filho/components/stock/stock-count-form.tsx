@@ -59,7 +59,7 @@ export function StockCountForm({
         });
       }}
     >
-      <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5 text-sm">
+      <div className="flex min-w-0 items-center justify-between rounded-lg border border-border bg-surface px-4 py-2.5 text-sm">
         <span className="text-muted-foreground">{rows.length} sabores para conferir</span>
         {divergent > 0 ? (
           <Badge variant="warning" dot>
@@ -83,7 +83,7 @@ export function StockCountForm({
                 !ok && "border-warning/50",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="eyebrow text-[10px]">{item.product_name}</p>
                   <div className="font-display font-semibold">
@@ -101,7 +101,7 @@ export function StockCountForm({
                   {ok ? "OK" : difference > 0 ? `+${difference}` : difference}
                 </span>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+              <div className="mt-3 grid min-w-0 grid-cols-3 gap-3 text-sm">
                 <div className="rounded-md border border-border bg-surface px-3 py-2">
                   <p className="eyebrow text-[10px]">Calculado</p>
                   <p className="mt-1 font-display text-xl font-bold tabular-nums">{item.quantity}</p>

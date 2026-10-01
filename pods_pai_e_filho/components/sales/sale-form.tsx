@@ -117,7 +117,7 @@ export function SaleForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_22rem] lg:items-start">
+    <form onSubmit={submit} className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start">
       <div className="grid gap-5">
         {!canWrite ? (
           <Notice tone="info">Seu perfil só permite consulta. A venda não será gravada.</Notice>
@@ -196,8 +196,8 @@ export function SaleForm({
             </Field>
             <div className="flex flex-col justify-end gap-1.5">
               <span className="eyebrow">Estoque atual</span>
-              <div className="flex h-12 items-center justify-between rounded-lg border border-border bg-surface px-3">
-                <span className="font-display text-lg font-semibold tabular-nums">{available} un</span>
+              <div className="flex h-12 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3">
+                <span className="min-w-0 font-display text-lg font-semibold tabular-nums">{available} un</span>
                 {available <= 0 ? (
                   <Badge variant="danger">Sem estoque</Badge>
                 ) : quantity > available ? (
@@ -227,7 +227,7 @@ export function SaleForm({
             >
               <label
                 className={cn(
-                  "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
+                  "flex min-h-12 min-w-0 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
                   isCredit
                     ? "border-primary/60 bg-primary/10 shadow-glow-sm"
                     : "border-input hover:border-primary/40",
@@ -239,7 +239,7 @@ export function SaleForm({
                   disabled={received}
                   onCheckedChange={(checked) => setFiado(checked === true)}
                 />
-                <span className="text-sm font-medium">
+                <span className="min-w-0 text-sm font-medium">
                   {received ? "Não se aplica a venda recebida" : "Sim, é fiado"}
                 </span>
                 {isCredit ? <Badge variant="danger" className="ml-auto">Fiado</Badge> : null}
@@ -306,24 +306,24 @@ function Summary({
     <Panel title="Resumo" icon={Calculator} glow bodyClassName="p-0">
       <div className="px-4 pt-4">
         <p className="eyebrow">Total da venda</p>
-        <p className="mt-1 font-display text-3xl font-bold tabular-nums glow-text">{formatBRL(preview.total)}</p>
+        <p className="mt-1 break-words font-display text-2xl font-bold tabular-nums glow-text sm:text-3xl">{formatBRL(preview.total)}</p>
       </div>
       <dl className="mt-4 grid gap-2 border-t border-border/70 px-4 py-3 text-sm">
         {rows.map(([label, value, tone]) => (
-          <div key={label} className="flex items-center justify-between gap-3">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className={cn("font-medium tabular-nums", tone)}>{value}</dd>
+          <div key={label} className="flex min-w-0 items-center justify-between gap-3">
+            <dt className="min-w-0 break-words text-muted-foreground">{label}</dt>
+            <dd className={cn("shrink-0 text-right font-medium tabular-nums", tone)}>{value}</dd>
           </div>
         ))}
       </dl>
-      <div className="grid grid-cols-2 gap-2 border-t border-border/70 px-4 py-3">
-        <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2">
+      <div className="grid grid-cols-1 gap-2 border-t border-border/70 px-4 py-3 sm:grid-cols-2">
+        <div className="min-w-0 rounded-md border border-primary/30 bg-primary/10 px-3 py-2">
           <p className="eyebrow text-[10px]">Parte do pai</p>
-          <p className="mt-1 font-display text-lg font-bold tabular-nums text-primary">{formatBRL(preview.transfer)}</p>
+          <p className="mt-1 break-words font-display text-lg font-bold tabular-nums text-primary">{formatBRL(preview.transfer)}</p>
         </div>
-        <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2">
+        <div className="min-w-0 rounded-md border border-success/30 bg-success/10 px-3 py-2">
           <p className="eyebrow text-[10px]">Lucro</p>
-          <p className="mt-1 font-display text-lg font-bold tabular-nums text-success">{formatBRL(preview.profit)}</p>
+          <p className="mt-1 break-words font-display text-lg font-bold tabular-nums text-success">{formatBRL(preview.profit)}</p>
         </div>
       </div>
       <div className="grid gap-1.5 border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">

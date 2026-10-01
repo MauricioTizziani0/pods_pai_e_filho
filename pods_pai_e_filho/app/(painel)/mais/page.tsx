@@ -45,8 +45,8 @@ export default async function MaisPage() {
   const profile = session.status === "ok" ? session.profile : null;
 
   return (
-    <div className="grid gap-5">
-      <section className="tech-card tech-card-accent flex items-center gap-4 p-4">
+    <div className="grid w-full min-w-0 gap-5">
+      <section className="tech-card tech-card-accent flex min-w-0 items-center gap-4 p-4">
         <BrandPlate size={64} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-lg font-bold leading-none">PODS</p>
@@ -72,7 +72,7 @@ export default async function MaisPage() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="tech-card press flex items-center gap-3 px-4 py-3 transition-colors hover:border-primary/50"
+                  className="tech-card press flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:border-primary/50"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
                     <Icon className="h-4 w-4" />

@@ -51,8 +51,8 @@ export function StatCard({
 }) {
   const body = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <p className="eyebrow">{label}</p>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <p className="eyebrow min-w-0 break-words">{label}</p>
         {Icon ? (
           <span
             className={cn(
@@ -66,14 +66,14 @@ export function StatCard({
       </div>
       <p
         className={cn(
-          "mt-3 font-display text-2xl font-bold leading-none tracking-tight tabular-nums md:text-[1.75rem]",
+          "mt-3 min-w-0 break-words font-display text-xl font-bold leading-tight tracking-tight tabular-nums sm:text-2xl sm:leading-none md:text-[1.75rem]",
           toneValue[featured ? "primary" : tone],
         )}
       >
         <AnimatedValue value={value} kind={kind} />
         {suffix ? <span className="ml-1 text-base font-semibold text-muted-foreground">{suffix}</span> : null}
       </p>
-      {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-2 min-w-0 break-words text-xs text-muted-foreground">{hint}</p> : null}
       {href ? (
         <ArrowUpRight className="absolute bottom-3 right-3 h-4 w-4 text-muted-foreground/60 transition-colors group-hover:text-primary" />
       ) : null}
@@ -81,7 +81,7 @@ export function StatCard({
   );
 
   const classes = cn(
-    "tech-card group relative p-4 transition-[border-color,box-shadow,transform] duration-200",
+    "tech-card group relative w-full min-w-0 max-w-full p-4 transition-[border-color,box-shadow,transform] duration-200",
     accent && "tech-card-accent",
     featured && "tech-card-glow hud-corners",
     href && "hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow-sm",

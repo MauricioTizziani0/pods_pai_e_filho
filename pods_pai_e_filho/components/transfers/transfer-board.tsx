@@ -72,22 +72,22 @@ export function TransferBoard({
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="stagger grid grid-cols-2 gap-3">
+    <div className="grid w-full min-w-0 gap-4">
+      <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatCard label="A enviar ao pai agora" value={dueTotal} icon={Send} featured hint={`${dueNow.length} venda(s)`} />
         <StatCard label="Repasse futuro" value={futureTotal} icon={Clock} tone="info" hint={`${future.length} venda(s)`} />
       </div>
 
-      <div className="segmented w-full">
+      <div className="segmented w-full min-w-0 max-w-full">
         {tabs.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
             data-active={tab === item.id}
-            className="segmented-item flex-1 gap-1.5 px-2"
+            className="segmented-item shrink-0 gap-1.5 px-2.5 text-xs sm:flex-1 sm:px-2 sm:text-sm"
           >
-            <span className="truncate">{item.label}</span>
+            <span className="whitespace-nowrap">{item.label}</span>
             <span
               className={cn(
                 "rounded px-1.5 text-[10px] font-bold tabular-nums",
@@ -101,7 +101,7 @@ export function TransferBoard({
       </div>
 
       {tab === "agora" && canWrite && dueNow.length > 0 ? (
-        <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+        <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <label className="flex cursor-pointer items-center gap-2.5">
             <Checkbox
               checked={allSelected}
@@ -110,7 +110,7 @@ export function TransferBoard({
             />
             <span className="text-muted-foreground">Selecionar todas</span>
           </label>
-          <span className="text-muted-foreground">
+          <span className="min-w-0 break-words text-muted-foreground">
             {selected.length} selecionada(s) ·{" "}
             <span className="font-medium tabular-nums text-foreground">{formatBRL(selectedTotal)}</span>
           </span>
@@ -127,31 +127,25 @@ export function TransferBoard({
               <article
                 key={sale.id}
                 className={cn(
-                  "tech-card p-4 transition-[border-color,box-shadow]",
+                  "tech-card min-w-0 p-4 transition-[border-color,box-shadow]",
                   checked && "border-primary/60 shadow-glow-sm",
                 )}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   {tab === "agora" && canWrite ? (
                     <Checkbox
                       checked={checked}
                       onCheckedChange={() => toggle(sale.id)}
-                      className="mt-1"
+                      className="mt-1 shrink-0"
                       aria-label={`Selecionar venda de ${sale.customer_name}`}
                     />
                   ) : null}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold">{sale.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(sale.sale_date)} · {sale.product_name} · {sale.variant_name} ·{" "}
-                          {sale.customer_type_name}
-                        </p>
-                      </div>
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <p className="min-w-0 break-words font-semibold">{sale.customer_name}</p>
                       <p
                         className={cn(
-                          "shrink-0 font-display text-lg font-bold tabular-nums",
+                          "shrink-0 text-right font-display text-base font-bold tabular-nums sm:text-lg",
                           tab === "agora" && "text-primary",
                           tab === "pagos" && "text-success",
                         )}
@@ -159,8 +153,17 @@ export function TransferBoard({
                         {formatBRL(sale.transfer_amount)}
                       </p>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>Venda {formatBRL(sale.total_amount)}</span>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      <span className="block sm:inline">{formatDate(sale.sale_date)}</span>
+                      <span className="hidden sm:inline"> · </span>
+                      <span className="block min-w-0 break-words sm:inline">{sale.product_name}</span>
+                      <span className="hidden sm:inline"> · </span>
+                      <span className="block min-w-0 break-words sm:inline">{sale.variant_name}</span>
+                      <span className="hidden sm:inline"> · </span>
+                      <span className="block sm:inline">{sale.customer_type_name}</span>
+                    </div>
+                    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="break-words">Venda {formatBRL(sale.total_amount)}</span>
                       {sale.is_credit ? <Badge variant="danger">Fiado</Badge> : null}
                       {sale.transfer_paid_at ? (
                         <Badge variant="success">pago em {formatDateTime(sale.transfer_paid_at)}</Badge>
@@ -171,7 +174,7 @@ export function TransferBoard({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="mt-3"
+                        className="mt-3 w-full sm:w-auto"
                         disabled={pending}
                         onClick={() => confirm([sale.id])}
                       >
@@ -198,6 +201,7 @@ export function TransferBoard({
           <Button
             type="button"
             size="lg"
+            className="h-auto min-h-12 w-full whitespace-normal"
             disabled={pending || selected.length === 0}
             onClick={() => confirm(selected)}
           >

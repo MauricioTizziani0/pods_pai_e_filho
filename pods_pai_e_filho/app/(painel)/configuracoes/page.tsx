@@ -44,7 +44,7 @@ export default async function ConfiguracoesPage() {
   });
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title="Configurações"
         eyebrow="Sistema"

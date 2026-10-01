@@ -19,7 +19,7 @@ export function FlavorIceCheckbox({
     <label
       htmlFor={id}
       className={cn(
-        "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
+        "flex min-h-11 min-w-0 cursor-pointer items-center gap-3 rounded-lg border bg-surface px-3 transition-[border-color,box-shadow,background-color]",
         checked ? "border-info/50 bg-info/10 shadow-glow-sm" : "border-input hover:border-primary/40",
         disabled && "cursor-not-allowed opacity-60",
       )}

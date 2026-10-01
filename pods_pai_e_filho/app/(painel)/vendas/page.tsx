@@ -38,7 +38,7 @@ export default async function VendasPage({
   const field = cn(controlClass, "h-11");
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title="Vendas"
         eyebrow={sales.ok ? `${sales.sales.length} registro(s)` : undefined}
@@ -51,11 +51,11 @@ export default async function VendasPage({
         <p className="eyebrow flex items-center gap-1.5">
           <Filter className="h-3 w-3" /> Filtros
         </p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
           <input className={field} type="date" name="de" defaultValue={params.de ?? ""} aria-label="De" />
           <input className={field} type="date" name="ate" defaultValue={params.ate ?? ""} aria-label="Até" />
           <input
-            className={cn(field, "col-span-2")}
+            className={cn(field, "sm:col-span-2")}
             name="cliente"
             placeholder="Cliente"
             defaultValue={params.cliente ?? ""}
@@ -110,7 +110,7 @@ export default async function VendasPage({
             <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
           </select>
-          <button className={cn(buttonVariants(), "h-11 md:col-span-4")} type="submit">
+          <button className={cn(buttonVariants(), "h-11 w-full md:col-span-4")} type="submit">
             Filtrar
           </button>
         </div>

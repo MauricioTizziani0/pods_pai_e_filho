@@ -13,7 +13,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, accent, glow, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("tech-card", accent && "tech-card-accent", glow && "tech-card-glow", className)}
+      className={cn("tech-card w-full min-w-0 max-w-full", accent && "tech-card-accent", glow && "tech-card-glow", className)}
       {...props}
     />
   ),

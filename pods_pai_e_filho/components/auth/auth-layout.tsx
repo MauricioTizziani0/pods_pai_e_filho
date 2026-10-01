@@ -14,7 +14,7 @@ export function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-svh w-full items-center justify-center overflow-hidden p-6 md:p-10">
+    <div className="relative flex min-h-svh w-full min-w-0 max-w-full items-center justify-center overflow-hidden p-4 sm:p-6 md:p-10">
       {/* linhas geométricas de fundo */}
       <div
         aria-hidden
@@ -29,7 +29,7 @@ export function AuthLayout({
         className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
       />
 
-      <div className="animate-enter relative w-full max-w-sm">
+      <div className="animate-enter relative w-full min-w-0 max-w-sm">
         <BrandHero className="mb-6 max-w-[14rem]" />
         <div className="tech-card tech-card-accent hud-corners p-6">
           <div className="mb-5">

@@ -71,7 +71,7 @@ export function ProductManager({
     });
 
   return (
-    <div className="grid gap-5">
+    <div className="grid w-full min-w-0 gap-5">
       {canWrite ? (
         <Panel title="Novo produto" description="Depois inclua sabores e preços" icon={PackagePlus}>
           <form
@@ -226,7 +226,7 @@ function ProductCard({
         </div>
       }
     >
-      <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {editing ? (
           <form className="grid gap-3 md:grid-cols-2 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); onSave(() => saveProductAction({ id: product.id, name, brand, model, approximatePuffs: puffs, active: product.active }), "Produto atualizado."); setEditing(false); }}>
             <Field label="Nome"><Input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
@@ -357,10 +357,10 @@ function ProductCard({
       ) : null}
       {confirmDelete && !product.has_history ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmDelete(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby={`delete-title-${product.id}`} className="w-full max-w-md rounded-lg border border-border bg-background p-5 shadow-xl">
-            <h3 id={`delete-title-${product.id}`} className="font-display text-lg font-semibold">Excluir {product.name}?</h3>
+          <section role="dialog" aria-modal="true" aria-labelledby={`delete-title-${product.id}`} className="w-[calc(100%-2rem)] max-w-md rounded-lg border border-border bg-background p-5 shadow-xl">
+            <h3 id={`delete-title-${product.id}`} className="break-words font-display text-lg font-semibold">Excluir {product.name}?</h3>
             <p className="mt-2 text-sm text-muted-foreground">Este produto ainda não possui vendas ou movimentações e pode ser excluído permanentemente. O sistema verificará novamente antes de excluir.</p>
-            <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button><Button variant="destructive" disabled={pending} onClick={() => { setConfirmDelete(false); onDelete(() => deleteProductAction(product.id), "Produto excluído."); }}>Excluir produto</Button></div>
+            <div className="mt-5 flex flex-wrap justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancelar</Button><Button variant="destructive" disabled={pending} onClick={() => { setConfirmDelete(false); onDelete(() => deleteProductAction(product.id), "Produto excluído."); }}>Excluir produto</Button></div>
           </section>
         </div>
       ) : null}
@@ -453,12 +453,12 @@ function FlavorRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-surface px-3 py-2 text-sm">
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-surface px-3 py-2 text-sm">
       <span className="flex min-w-0 items-center gap-2">
         <FlavorLabel name={variant.name} isIce={variant.is_ice} />
         {!variant.active ? <Badge variant="neutral">inativo</Badge> : null}
       </span>
-      <span className="flex shrink-0 items-center gap-1.5">
+      <span className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
         <span className="font-display font-semibold tabular-nums">{quantity} un</span>
         {canWrite ? (
           <>
@@ -546,7 +546,7 @@ function PriceRow({
 
   return (
     <form
-      className="grid gap-2 rounded-md border border-border/70 bg-surface p-3 md:grid-cols-[7rem_1fr_1fr_auto] md:items-end"
+      className="grid min-w-0 gap-2 rounded-md border border-border/70 bg-surface p-3 md:grid-cols-[minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
       onSubmit={(event) => {
         event.preventDefault();
         onSave(

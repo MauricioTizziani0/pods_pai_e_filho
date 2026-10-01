@@ -87,18 +87,24 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
           <Link
             key={sale.id}
             href={`/vendas/${sale.id}`}
-            className="tech-card press block p-4 transition-colors hover:border-primary/50"
+            className="tech-card press block min-w-0 p-4 transition-colors hover:border-primary/50"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate font-semibold">{sale.customer_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(sale.sale_date)} · {sale.product_name} · {sale.variant_name}
+            <div className="flex min-w-0 items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-semibold">{sale.customer_name}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  <span className="block sm:inline">{formatDate(sale.sale_date)}</span>
+                  <span className="hidden sm:inline"> · </span>
+                  <span className="block min-w-0 break-words sm:inline">{sale.product_name}</span>
+                  <span className="hidden sm:inline"> · </span>
+                  <span className="block min-w-0 break-words sm:inline">{sale.variant_name}</span>
                 </p>
               </div>
-              <p className="shrink-0 font-display text-lg font-bold tabular-nums">{formatBRL(sale.total_amount)}</p>
+              <p className="shrink-0 text-right font-display text-base font-bold tabular-nums sm:text-lg">
+                {formatBRL(sale.total_amount)}
+              </p>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="mt-3 flex min-w-0 flex-wrap gap-1">
               <PaymentBadge
                 name={sale.payment_status_name}
                 received={sale.counts_as_received}
@@ -113,17 +119,17 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
               />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/70 pt-3 text-xs">
-              <span>
+              <span className="min-w-0">
                 <span className="block text-muted-foreground">Qtd</span>
                 <span className="font-medium tabular-nums">{sale.quantity} un</span>
               </span>
-              <span>
+              <span className="min-w-0">
                 <span className="block text-muted-foreground">Lucro</span>
-                <span className="font-medium tabular-nums text-success">{formatBRL(sale.profit_amount)}</span>
+                <span className="break-words font-medium tabular-nums text-success">{formatBRL(sale.profit_amount)}</span>
               </span>
-              <span>
+              <span className="min-w-0">
                 <span className="block text-muted-foreground">Repasse</span>
-                <span className="font-medium tabular-nums">{formatBRL(sale.transfer_amount)}</span>
+                <span className="break-words font-medium tabular-nums">{formatBRL(sale.transfer_amount)}</span>
               </span>
             </div>
           </Link>

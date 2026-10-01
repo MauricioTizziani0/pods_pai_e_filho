@@ -17,7 +17,7 @@ export default async function RepassesPage() {
   const error = [dueNow, future, paid].find((result) => !result.ok);
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title="Repasses"
         eyebrow="Financeiro"

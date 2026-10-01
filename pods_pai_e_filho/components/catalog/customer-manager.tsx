@@ -62,7 +62,7 @@ export function CustomerManager({
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid w-full min-w-0 gap-5">
       {canWrite ? (
         <Panel
           title={editing ? "Editar cliente" : "Novo cliente"}

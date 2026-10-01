@@ -11,7 +11,7 @@ export default async function NovaVendaPage() {
   const canWrite = session.status === "ok" && session.profile.can_write;
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title="Nova venda"
         eyebrow="Registrar"

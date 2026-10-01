@@ -92,7 +92,7 @@ export function AppShell({
   ];
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh w-full min-w-0 max-w-full">
       {/* ---------------- Sidebar (desktop) ---------------- */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-[#0A0A0A]/95 backdrop-blur md:flex">
         <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent" />
@@ -182,36 +182,36 @@ export function AppShell({
       </aside>
 
       {/* ---------------- Conteúdo ---------------- */}
-      <div className="md:pl-64">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:hidden">
+      <div className="w-full min-w-0 max-w-full md:pl-64">
+        <header className="sticky top-0 z-30 w-full min-w-0 border-b border-border bg-background/85 backdrop-blur md:hidden">
           <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent" />
-          <div className="flex items-center justify-between px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-            <Link href="/inicio" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+          <div className="flex min-w-0 items-center justify-between gap-3 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+            <Link href="/inicio" className="shrink-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
               <BrandMark size={38} />
             </Link>
             <Link
               href="/mais"
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs"
+              className="flex min-w-0 max-w-[70%] items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs"
               aria-label="Perfil e mais opções"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded border border-primary/40 bg-primary/10 font-display text-[10px] font-bold text-primary">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-primary/40 bg-primary/10 font-display text-[10px] font-bold text-primary">
                 {initials(profile.full_name)}
               </span>
-              <span className="max-w-[7rem] truncate">{profile.full_name}</span>
+              <span className="min-w-0 truncate">{profile.full_name}</span>
             </Link>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:px-8 md:py-8 md:pb-12">
-          <div key={pathname} className="animate-enter">
+        <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:py-8 md:pb-12">
+          <div key={pathname} className="animate-enter w-full min-w-0 max-w-full">
             {children}
           </div>
         </main>
       </div>
 
       {/* ---------------- Bottom nav (mobile) ---------------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-border bg-card/95 backdrop-blur md:hidden">
+        <div className="mx-auto grid w-full max-w-lg grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
           {mobile.map((item) => {
             const active = item.emphasis
               ? pathname.startsWith("/vendas/nova")
@@ -223,7 +223,7 @@ export function AppShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "press relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+                  "press relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
                   item.emphasis && "-mt-4",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
@@ -233,7 +233,7 @@ export function AppShell({
                 ) : null}
                 <span
                   className={cn(
-                    "flex items-center justify-center transition-[box-shadow,background-color]",
+                    "flex shrink-0 items-center justify-center transition-[box-shadow,background-color]",
                     item.emphasis
                       ? "h-14 w-14 rounded-md border-2 border-background bg-primary text-primary-foreground shadow-glow"
                       : "h-6 w-6",
@@ -241,7 +241,9 @@ export function AppShell({
                 >
                   <Icon className={item.emphasis ? "h-6 w-6" : "h-5 w-5"} strokeWidth={item.emphasis ? 2.5 : 2} />
                 </span>
-                <span className={cn(item.emphasis && "font-semibold text-foreground")}>{item.label}</span>
+                <span className={cn("w-full min-w-0 truncate px-0.5 text-center", item.emphasis && "font-semibold text-foreground")}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}

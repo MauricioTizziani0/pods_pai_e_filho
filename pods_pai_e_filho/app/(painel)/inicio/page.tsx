@@ -41,7 +41,7 @@ export default async function InicioPage({
 
   if (!dashboard.ok) {
     return (
-      <div className="grid gap-4">
+      <div className="grid w-full min-w-0 gap-4">
         <PageHeading title="Dashboard" />
         <Notice>{dashboard.message}</Notice>
       </div>
@@ -69,7 +69,7 @@ export default async function InicioPage({
   const receivableShare = cashBase > 0 ? (n(m.receivable) / cashBase) * 100 : 0;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid w-full min-w-0 gap-6">
       <PageHeading
         title="Dashboard"
         eyebrow="Painel de controle"
@@ -78,33 +78,35 @@ export default async function InicioPage({
       />
 
       {/* Filtro de período */}
-      <form className="flex flex-wrap items-center gap-2" method="get">
-        <div className="segmented">
+      <form className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" method="get">
+        <div className="segmented w-full sm:w-auto">
           <PeriodLink current={params.periodo} value="" label="Tudo" />
           <PeriodLink current={params.periodo} value="mes" label="Este mês" />
         </div>
         <input type="hidden" name="periodo" value="personalizado" />
-        <input
-          className={cn(controlClass, "h-10 w-auto min-w-[9.5rem]")}
-          type="date"
-          name="de"
-          aria-label="De"
-          defaultValue={params.de ?? period.from ?? ""}
-        />
-        <input
-          className={cn(controlClass, "h-10 w-auto min-w-[9.5rem]")}
-          type="date"
-          name="ate"
-          aria-label="Até"
-          defaultValue={params.ate ?? period.to ?? ""}
-        />
-        <button className={cn(buttonVariants({ variant: "secondary" }), "h-10")} type="submit">
-          Filtrar
-        </button>
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+          <input
+            className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")}
+            type="date"
+            name="de"
+            aria-label="De"
+            defaultValue={params.de ?? period.from ?? ""}
+          />
+          <input
+            className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")}
+            type="date"
+            name="ate"
+            aria-label="Até"
+            defaultValue={params.ate ?? period.to ?? ""}
+          />
+          <button className={cn(buttonVariants({ variant: "secondary" }), "h-10 w-full sm:w-auto")} type="submit">
+            Filtrar
+          </button>
+        </div>
       </form>
 
       {/* Indicadores principais */}
-      <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Estoque atual"
           value={stockTotal}
@@ -143,7 +145,7 @@ export default async function InicioPage({
       </section>
 
       {/* Financeiro detalhado */}
-      <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Dinheiro recebido" value={n(m.money_received)} icon={Banknote} tone="success" />
         <StatCard
           label="A receber · pendentes e fiados"
@@ -158,7 +160,7 @@ export default async function InicioPage({
         <StatCard label="Repasse futuro" value={n(m.transfer_future)} icon={Clock} tone="info" />
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         {/* Estoque por produto */}
         <Panel
           title="Estoque"
@@ -181,8 +183,8 @@ export default async function InicioPage({
                   activeProductStock.quantity <= dashboard.lowStockThreshold;
                 return (
                   <li key={productId} className="grid gap-1.5">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="truncate font-medium">{product.name}</span>
+                    <div className="flex min-w-0 items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 break-words font-medium">{product.name}</span>
                       <span className="shrink-0 font-display font-semibold tabular-nums">{product.quantity} un</span>
                     </div>
                     <div className="bar-track">
@@ -221,9 +223,9 @@ export default async function InicioPage({
               </p>
             )}
             {dashboard.divergences.length > 0 ? (
-              <p className="flex items-center gap-2 text-sm text-warning">
-                <AlertTriangle className="h-4 w-4" />
-                {dashboard.divergences.length} divergência(s) na última conferência.
+              <p className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-warning">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 break-words">{dashboard.divergences.length} divergência(s) na última conferência.</span>
                 <Link href="/estoque/conferencia" className="underline underline-offset-4">
                   Conferir
                 </Link>
@@ -239,40 +241,40 @@ export default async function InicioPage({
           ) : (
             <div className="grid gap-5">
               <div>
-                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Parte do pai × Lucro</span>
-                  <span className="tabular-nums">{formatBRL(soldTotal)}</span>
+                <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="min-w-0 break-words">Parte do pai × Lucro</span>
+                  <span className="shrink-0 tabular-nums">{formatBRL(soldTotal)}</span>
                 </div>
-                <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
+                <div className="flex h-3 w-full min-w-0 max-w-full overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full bg-gradient-to-r from-primary-deep to-primary"
+                    className="h-full min-w-0 bg-gradient-to-r from-primary-deep to-primary"
                     style={{ width: `${transferShare}%` }}
                     title={`Parte do pai ${formatBRL(m.transfer_total)}`}
                   />
                   <div
-                    className="h-full bg-gradient-to-r from-success/70 to-success"
+                    className="h-full min-w-0 bg-gradient-to-r from-success/70 to-success"
                     style={{ width: `${profitShare}%` }}
                     title={`Lucro ${formatBRL(m.profit_total)}`}
                   />
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div className="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                   <Legend color="bg-primary" label="Parte do pai" value={formatBRL(m.transfer_total)} pct={transferShare} />
                   <Legend color="bg-success" label="Lucro" value={formatBRL(m.profit_total)} pct={profitShare} />
                 </div>
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Recebido × A receber</span>
+                <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="min-w-0 break-words">Recebido × A receber</span>
                 </div>
-                <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-2">
+                <div className="flex h-3 w-full min-w-0 max-w-full overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full bg-gradient-to-r from-success/70 to-success"
+                    className="h-full min-w-0 bg-gradient-to-r from-success/70 to-success"
                     style={{ width: `${receivedShare}%` }}
                   />
-                  <div className="h-full bg-warning/80" style={{ width: `${receivableShare}%` }} />
+                  <div className="h-full min-w-0 bg-warning/80" style={{ width: `${receivableShare}%` }} />
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div className="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                   <Legend color="bg-success" label="Recebido" value={formatBRL(m.money_received)} pct={receivedShare} />
                   <Legend color="bg-warning" label="A receber" value={formatBRL(m.receivable)} pct={receivableShare} />
                 </div>
@@ -302,20 +304,20 @@ export default async function InicioPage({
               <li key={sale.id}>
                 <Link
                   href={`/vendas/${sale.id}`}
-                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary/5"
+                  className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground">
                     <Receipt className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{sale.customer_name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="break-words font-medium">{sale.customer_name}</p>
+                    <p className="mt-0.5 break-words text-xs text-muted-foreground">
                       {formatDate(sale.sale_date)} · {sale.items_label}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span>
-                    <span className="flex gap-1">
+                  <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
+                    <span className="break-words text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span>
+                    <span className="flex flex-wrap justify-end gap-1">
                       <PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} />
                       {sale.is_credit ? <CreditBadge /> : null}
                     </span>
@@ -342,13 +344,13 @@ function Legend({
   pct: number;
 }) {
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex min-w-0 items-start gap-2">
       <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-sm", color)} />
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">
+        <p className="break-words text-xs text-muted-foreground">
           {label} · {pct.toFixed(0)}%
         </p>
-        <p className="font-medium tabular-nums">{value}</p>
+        <p className="break-words font-medium tabular-nums">{value}</p>
       </div>
     </div>
   );

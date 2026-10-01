@@ -60,7 +60,7 @@ export function SettingsPanel({
   }
 
   return (
-    <div className="stagger grid gap-5">
+    <div className="stagger grid w-full min-w-0 gap-5">
       <Panel title="Seu acesso" icon={ShieldCheck} accent>
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10 font-display text-sm font-bold text-primary">
@@ -154,7 +154,7 @@ export function SettingsPanel({
         </ul>
         {profile.can_write ? (
           <form
-            className="mt-4 flex gap-2"
+            className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row"
             onSubmit={(event) => {
               event.preventDefault();
               run(() => saveCustomerTypeAction(typeName), "Tipo de cliente criado. Defina os preços em Produtos.");
@@ -162,13 +162,13 @@ export function SettingsPanel({
             }}
           >
             <Input
-              className="h-11"
+              className="h-11 min-w-0 flex-1"
               value={typeName}
               onChange={(event) => setTypeName(event.target.value)}
               placeholder="Novo tipo"
               required
             />
-            <Button type="submit" variant="outline" disabled={pending}>
+            <Button type="submit" variant="outline" className="w-full shrink-0 sm:w-auto" disabled={pending}>
               <Plus />
               Adicionar
             </Button>
@@ -181,9 +181,9 @@ export function SettingsPanel({
           {statuses.map((status) => (
             <li
               key={status.id}
-              className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-surface px-3 py-2"
+              className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-border/70 bg-surface px-3 py-2"
             >
-              <span className="font-medium">{status.name}</span>
+              <span className="min-w-0 break-words font-medium">{status.name}</span>
               {status.active ? (
                 <Badge variant="success">Ativo</Badge>
               ) : (

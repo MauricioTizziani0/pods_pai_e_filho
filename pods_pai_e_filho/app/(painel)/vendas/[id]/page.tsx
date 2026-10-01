@@ -26,7 +26,7 @@ export default async function VendaPage({ params }: { params: Promise<{ id: stri
   const canWrite = session.status === "ok" && session.profile.can_write;
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <PageHeading
         title={sale.sale.customer_name}
         eyebrow={`Venda #${shortId(sale.sale.id)}`}
