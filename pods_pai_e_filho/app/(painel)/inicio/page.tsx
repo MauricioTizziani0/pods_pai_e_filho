@@ -16,6 +16,7 @@ import {
 import { getSessionState } from "@/lib/auth";
 import { loadDashboard } from "@/lib/data/dashboard";
 import { formatBRL, formatDate, resolvePeriod } from "@/lib/format";
+import { getFlavorDisplayName } from "@/lib/domain/flavors";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { PaymentBadge, CreditBadge, StockBadge } from "@/components/sales/badges";
@@ -203,7 +204,8 @@ export default async function InicioPage({
                 </span>
                 {low.map((item) => (
                   <Badge key={item.variant_id} variant="warning">
-                    {item.product_name} {item.variant_name} · {item.quantity}
+                    {item.product_name}{" "}
+                    {getFlavorDisplayName({ name: item.variant_name, is_ice: item.variant_is_ice })} · {item.quantity}
                   </Badge>
                 ))}
               </div>

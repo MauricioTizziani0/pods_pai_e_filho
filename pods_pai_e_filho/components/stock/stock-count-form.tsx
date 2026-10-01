@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
 import { Badge } from "@/components/ui/badge";
+import { FlavorLabel } from "@/components/sales/badges";
 import { cn } from "@/lib/utils";
 
 export function StockCountForm({
@@ -85,7 +86,9 @@ export function StockCountForm({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="eyebrow text-[10px]">{item.product_name}</p>
-                  <p className="truncate font-display font-semibold">{item.variant_name}</p>
+                  <div className="font-display font-semibold">
+                    <FlavorLabel name={item.variant_name} isIce={item.variant_is_ice} />
+                  </div>
                 </div>
                 <span
                   className={cn(

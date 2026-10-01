@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, History, Pencil, Send } from "lucide-react";
 import { cancelSaleAction, confirmReceiptAction, updateSaleAction } from "@/lib/actions/sales";
 import { formatBRL, formatDateTime } from "@/lib/format";
+import { getFlavorDisplayName } from "@/lib/domain/flavors";
 import type { AuditLog, CatalogSnapshot, SaleOverview } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,7 +184,7 @@ export function SaleEditor({
                 <Select disabled={locked} value={variantId} onChange={(event) => setVariantId(event.target.value)}>
                   {variants.map((variant) => (
                     <option key={variant.id} value={variant.id}>
-                      {variant.name}
+                      {getFlavorDisplayName(variant)}
                     </option>
                   ))}
                 </Select>

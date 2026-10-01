@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { flavorSearchOrFilter, iceFilterToBool, parseIceParam } from "@/lib/domain/flavors";
 import type { AuditLog, SaleItem, SaleOverview } from "@/lib/types";
 
 export type SaleQuery = {
@@ -8,6 +9,8 @@ export type SaleQuery = {
   customerTypeId?: string;
   paymentStatusId?: string;
   credit?: string;
+  ice?: string;
+  flavor?: string;
   customer?: string;
   situation?: string;
   dueNow?: boolean;
@@ -33,6 +36,11 @@ export async function listSales(query: SaleQuery = {}) {
   if (query.paymentStatusId) request = request.eq("payment_status_id", query.paymentStatusId);
   if (query.credit === "sim") request = request.eq("is_credit", true);
   if (query.credit === "nao") request = request.eq("is_credit", false);
+  const ice = iceFilterToBool(parseIceParam(query.ice));
+  if (ice === true) request = request.eq("variant_is_ice", true);
+  if (ice === false) request = request.eq("variant_is_ice", false);
+  const flavorOr = query.flavor ? flavorSearchOrFilter(query.flavor) : null;
+  if (flavorOr) request = request.or(flavorOr);
   if (query.customer) request = request.ilike("customer_name", `%${query.customer}%`);
   if (query.situation !== "todas" && query.situation !== "canceladas") {
     request = request.eq("is_valid", true);

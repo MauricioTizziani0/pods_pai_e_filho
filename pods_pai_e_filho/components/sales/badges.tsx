@@ -1,4 +1,7 @@
+import { Snowflake } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getFlavorDisplayName } from "@/lib/domain/flavors";
+import { cn } from "@/lib/utils";
 
 export function PaymentBadge({
   name,
@@ -40,4 +43,36 @@ export function StockBadge({ quantity, threshold }: { quantity: number; threshol
   if (quantity <= 0) return <Badge variant="danger">Sem estoque</Badge>;
   if (quantity <= threshold) return <Badge variant="warning" dot>Estoque baixo</Badge>;
   return <Badge variant="success">Em estoque</Badge>;
+}
+
+export function IceBadge({ className }: { className?: string }) {
+  return (
+    <Badge variant="info" className={cn("gap-1", className)} title="Sabor Ice">
+      <Snowflake className="h-3 w-3" aria-hidden />
+      Ice
+    </Badge>
+  );
+}
+
+export function FlavorLabel({
+  name,
+  isIce,
+  mode = "list",
+  className,
+}: {
+  name: string;
+  isIce?: boolean | null;
+  mode?: "list" | "display";
+  className?: string;
+}) {
+  const ice = Boolean(isIce);
+  if (mode === "display") {
+    return <span className={className}>{getFlavorDisplayName({ name, is_ice: ice })}</span>;
+  }
+  return (
+    <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
+      <span className="truncate">{name}</span>
+      {ice ? <IceBadge /> : null}
+    </span>
+  );
 }

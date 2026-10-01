@@ -62,6 +62,7 @@ export async function loadCatalog(): Promise<
       })),
       variants: ((variants.data ?? []) as ProductVariant[]).map((variant) => ({
         ...variant,
+        is_ice: Boolean(variant.is_ice),
         has_history:
           (saleItems.data ?? []).some((row) => row.variant_id === variant.id) ||
           (movements.data ?? []).some((row) => row.variant_id === variant.id) ||
@@ -71,7 +72,10 @@ export async function loadCatalog(): Promise<
       statuses: (statuses.data ?? []) as PaymentStatus[],
       prices: (prices.data ?? []) as PriceRule[],
       customers: (customers.data ?? []) as Customer[],
-      stock: (stock.data ?? []) as StockBalance[],
+      stock: ((stock.data ?? []) as StockBalance[]).map((item) => ({
+        ...item,
+        variant_is_ice: Boolean(item.variant_is_ice),
+      })),
     },
   };
 }

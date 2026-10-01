@@ -6,7 +6,9 @@ import type { SalesReport } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { controlClass } from "@/components/ui/field";
+import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { buttonVariants } from "@/components/ui/button";
+import { iceFilterToBool, parseIceParam } from "@/lib/domain/flavors";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Relatórios" };
@@ -25,6 +27,7 @@ export default async function RelatoriosPage({
   const catalog = await loadCatalog();
   const supabase = await createClient();
   const credit = params.fiado === "sim" ? true : params.fiado === "nao" ? false : null;
+  const ice = iceFilterToBool(parseIceParam(params.ice));
   const { data, error } = await supabase.rpc("sales_report", {
     p_from: period.from,
     p_to: period.to,
@@ -34,6 +37,8 @@ export default async function RelatoriosPage({
     p_customer_type_id: params.tipo || null,
     p_payment_status_id: params.status || null,
     p_is_credit: credit,
+    p_is_ice: ice,
+    p_flavor: params.sabor || null,
   });
 
   const report = (data ?? {
@@ -100,6 +105,14 @@ export default async function RelatoriosPage({
             <option value="sim">Só fiado</option>
             <option value="nao">Sem fiado</option>
           </select>
+          <IceFilterSelect defaultValue={params.ice} className={field} />
+          <input
+            className={field}
+            name="sabor"
+            placeholder="Sabor (ex.: Grape Ice)"
+            defaultValue={params.sabor ?? ""}
+            aria-label="Sabor"
+          />
           <button className={cn(buttonVariants(), "col-span-2 h-11 md:col-span-4")} type="submit">
             Atualizar
           </button>

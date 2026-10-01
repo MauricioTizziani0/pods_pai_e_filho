@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PackagePlus } from "lucide-react";
 import { registerStockMovementAction } from "@/lib/actions/stock";
 import { todayInBrazil } from "@/lib/format";
+import { getFlavorDisplayName } from "@/lib/domain/flavors";
 import type { StockBalance } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,7 +72,7 @@ export function StockEntryForm({
                 <optgroup key={product} label={product}>
                   {items.map((item) => (
                     <option key={item.variant_id} value={item.variant_id}>
-                      {item.variant_name} · {item.quantity} un
+                      {getFlavorDisplayName({ name: item.variant_name, is_ice: item.variant_is_ice })} · {item.quantity} un
                     </option>
                   ))}
                 </optgroup>

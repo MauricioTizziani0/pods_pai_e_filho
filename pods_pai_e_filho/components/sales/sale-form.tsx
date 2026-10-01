@@ -6,6 +6,7 @@ import { Calculator, HandCoins, Send, ShoppingCart, User } from "lucide-react";
 import { createSaleAction } from "@/lib/actions/sales";
 import { previewSale, type SalePreview } from "@/lib/domain/finance";
 import { formatBRL, todayInBrazil } from "@/lib/format";
+import { getFlavorDisplayName } from "@/lib/domain/flavors";
 import type { CatalogSnapshot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +176,7 @@ export function SaleForm({
                   const qty = catalog.stock.find((item) => item.variant_id === variant.id)?.quantity ?? 0;
                   return (
                     <option key={variant.id} value={variant.id}>
-                      {variant.name} · {qty} un
+                      {getFlavorDisplayName(variant)} · {qty} un
                     </option>
                   );
                 })}

@@ -1,21 +1,30 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ClipboardCheck, History, Package } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ClipboardCheck, Filter, History, Package } from "lucide-react";
 import { getSessionState } from "@/lib/auth";
 import { loadCatalog, loadLowStockThreshold } from "@/lib/data/catalog";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
+import { matchesFlavorSearch, matchesIceFilter, parseIceParam } from "@/lib/domain/flavors";
 import type { StockMovement } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { StockEntryForm } from "@/components/stock/stock-entry-form";
-import { StockBadge } from "@/components/sales/badges";
+import { IceBadge, StockBadge } from "@/components/sales/badges";
+import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
+import { controlClass } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Estoque" };
 
-export default async function EstoquePage() {
+export default async function EstoquePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
   const [catalog, session, threshold] = await Promise.all([
     loadCatalog(),
     getSessionState(),
@@ -38,13 +47,22 @@ export default async function EstoquePage() {
     .order("created_at", { ascending: false })
     .limit(12);
 
-  const groups = new Map<string, typeof catalog.data.stock>();
-  for (const item of catalog.data.stock) {
+  const iceFilter = parseIceParam(params.ice);
+  const flavorQuery = params.sabor ?? "";
+  const visibleStock = catalog.data.stock.filter(
+    (item) =>
+      matchesIceFilter(item.variant_is_ice, iceFilter) &&
+      matchesFlavorSearch({ name: item.variant_name, is_ice: item.variant_is_ice }, flavorQuery),
+  );
+
+  const groups = new Map<string, typeof visibleStock>();
+  for (const item of visibleStock) {
     const list = groups.get(item.product_name) ?? [];
     list.push(item);
     groups.set(item.product_name, list);
   }
-  const total = catalog.data.stock.reduce((sum, item) => sum + item.quantity, 0);
+  const total = visibleStock.reduce((sum, item) => sum + item.quantity, 0);
+  const field = cn(controlClass, "h-11");
 
   return (
     <div className="grid gap-6">
@@ -54,6 +72,25 @@ export default async function EstoquePage() {
         description="O saldo vem das movimentações. Venda, fiado ou a receber baixam na hora."
         action={{ href: "/estoque/conferencia", label: "Conferir" }}
       />
+
+      <form className="tech-card grid gap-2 p-3 md:p-4" method="get">
+        <p className="eyebrow flex items-center gap-1.5">
+          <Filter className="h-3 w-3" /> Filtros
+        </p>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <input
+            className={cn(field, "col-span-2")}
+            name="sabor"
+            placeholder="Pesquisar sabor (ex.: Grape Ice)"
+            defaultValue={params.sabor ?? ""}
+            aria-label="Pesquisar sabor"
+          />
+          <IceFilterSelect defaultValue={params.ice} />
+          <button className={cn(buttonVariants(), "h-11")} type="submit">
+            Filtrar
+          </button>
+        </div>
+      </form>
 
       <div className="stagger grid gap-3 md:grid-cols-2">
         {[...groups.entries()].map(([product, items]) => {
@@ -80,6 +117,7 @@ export default async function EstoquePage() {
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="truncate">{item.variant_name}</span>
+                          {item.variant_is_ice ? <IceBadge /> : <span className="text-xs text-muted-foreground">Normal</span>}
                           {!item.variant_active ? <Badge variant="neutral">inativo</Badge> : null}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">

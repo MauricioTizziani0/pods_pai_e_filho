@@ -40,6 +40,7 @@ export type ProductVariant = {
   id: string;
   product_id: string;
   name: string;
+  is_ice: boolean;
   active: boolean;
   has_history?: boolean;
 };
@@ -67,6 +68,7 @@ export type StockBalance = {
   variant_id: string;
   variant_name: string;
   variant_active: boolean;
+  variant_is_ice: boolean;
   product_id: string;
   product_name: string;
   brand: string;
@@ -88,6 +90,7 @@ export type StockMovement = {
   created_at: string;
   product_name: string;
   variant_name: string;
+  variant_is_ice?: boolean;
   user_name: string | null;
 };
 
@@ -126,6 +129,7 @@ export type SaleOverview = {
   product_name: string | null;
   variant_id: string | null;
   variant_name: string | null;
+  variant_is_ice?: boolean | null;
   unit_price: string | null;
   unit_transfer: string | null;
   unit_profit: string | null;
@@ -190,6 +194,7 @@ export type StockDivergence = {
   product_id: string;
   product_name: string;
   variant_name: string;
+  variant_is_ice?: boolean;
   system_quantity: number;
   physical_quantity: number;
   difference: number;

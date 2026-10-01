@@ -4,14 +4,24 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Boxes, PackagePlus, Plus, Tag, Pencil, Trash2 } from "lucide-react";
 import { deleteProductAction, deleteVariantAction, savePriceAction, saveProductAction, saveVariantAction } from "@/lib/actions/catalog";
+import {
+  getFlavorDisplayName,
+  matchesFlavorSearch,
+  matchesIceFilter,
+  nameEndsWithIce,
+  normalizeFlavorName,
+  type IceFilter,
+} from "@/lib/domain/flavors";
 import { formatBRL, moneyToInput } from "@/lib/format";
-import type { CatalogSnapshot, Product } from "@/lib/types";
+import type { CatalogSnapshot, Product, ProductVariant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
+import { FlavorLabel } from "@/components/sales/badges";
+import { FlavorIceCheckbox } from "@/components/catalog/flavor-ice-field";
 import { cn } from "@/lib/utils";
 
 export function ProductManager({
@@ -30,6 +40,8 @@ export function ProductManager({
   const [model, setModel] = useState("");
   const [puffs, setPuffs] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [iceFilter, setIceFilter] = useState<IceFilter>("all");
+  const [flavorQuery, setFlavorQuery] = useState("");
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>, success: string) {
     setError(null);
@@ -46,6 +58,17 @@ export function ProductManager({
   }
 
   const types = catalog.customerTypes.filter((type) => type.active);
+  const visibleProducts = catalog.products
+    .filter((p) => filter === "all" || p.active === (filter === "active"))
+    .filter((product) => {
+      if (iceFilter === "all" && !flavorQuery.trim()) return true;
+      return catalog.variants.some(
+        (variant) =>
+          variant.product_id === product.id &&
+          matchesIceFilter(variant.is_ice, iceFilter) &&
+          matchesFlavorSearch(variant, flavorQuery),
+      );
+    });
 
   return (
     <div className="grid gap-5">
@@ -101,13 +124,31 @@ export function ProductManager({
       {message ? <Notice tone="success">{message}</Notice> : null}
       {error ? <Notice>{error}</Notice> : null}
 
-      <div className="flex gap-2" role="group" aria-label="Filtrar produtos">
-        {([["all", "Todos"], ["active", "Ativos"], ["inactive", "Inativos"]] as const).map(([value, label]) => (
-          <Button key={value} variant={filter === value ? "secondary" : "ghost"} size="sm" onClick={() => setFilter(value)}>{label}</Button>
-        ))}
+      <div className="grid gap-3">
+        <Input
+          className="h-11"
+          value={flavorQuery}
+          onChange={(event) => setFlavorQuery(event.target.value)}
+          placeholder="Pesquisar sabor (ex.: Grape Ice)"
+          aria-label="Pesquisar sabor"
+        />
+        <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar produtos">
+            <span className="eyebrow">Produtos</span>
+            {([["all", "Todos"], ["active", "Ativos"], ["inactive", "Inativos"]] as const).map(([value, label]) => (
+              <Button key={value} variant={filter === value ? "secondary" : "ghost"} size="sm" onClick={() => setFilter(value)}>{label}</Button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar sabores Ice">
+            <span className="eyebrow">Sabores</span>
+            {([["all", "Todos"], ["ice", "Ice"], ["nao_ice", "Não Ice"]] as const).map(([value, label]) => (
+              <Button key={value} variant={iceFilter === value ? "secondary" : "ghost"} size="sm" onClick={() => setIceFilter(value)}>{label}</Button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="stagger grid gap-4">
-        {catalog.products.filter((p) => filter === "all" || p.active === (filter === "active")).map((product) => (
+        {visibleProducts.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
@@ -115,10 +156,15 @@ export function ProductManager({
             types={types}
             canWrite={canWrite}
             pending={pending}
+            iceFilter={iceFilter}
+            flavorQuery={flavorQuery}
             onSave={run}
             onDelete={(action, success) => run(action, success)}
           />
         ))}
+        {visibleProducts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum sabor encontrado neste filtro.</p>
+        ) : null}
       </div>
     </div>
   );
@@ -130,6 +176,8 @@ function ProductCard({
   types,
   canWrite,
   pending,
+  iceFilter,
+  flavorQuery,
   onSave,
   onDelete,
 }: {
@@ -138,17 +186,25 @@ function ProductCard({
   types: CatalogSnapshot["customerTypes"];
   canWrite: boolean;
   pending: boolean;
+  iceFilter: IceFilter;
+  flavorQuery: string;
   onSave: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
   onDelete: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
 }) {
   const [flavor, setFlavor] = useState("");
+  const [flavorIce, setFlavorIce] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(product.name);
   const [brand, setBrand] = useState(product.brand);
   const [model, setModel] = useState(product.model);
   const [puffs, setPuffs] = useState(product.approximate_puffs?.toString() ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const variants = catalog.variants.filter((variant) => variant.product_id === product.id);
+  const variants = catalog.variants.filter(
+    (variant) =>
+      variant.product_id === product.id &&
+      matchesIceFilter(variant.is_ice, iceFilter) &&
+      matchesFlavorSearch(variant, flavorQuery),
+  );
   const stock = catalog.stock.filter((item) => item.product_id === product.id);
   const total = stock.reduce((sum, item) => sum + item.quantity, 0);
   const meta = [product.brand, product.model].filter(Boolean).join(" · ") || "Sem marca";
@@ -187,55 +243,53 @@ function ProductCard({
             {variants.map((variant) => {
               const quantity = stock.find((item) => item.variant_id === variant.id)?.quantity ?? 0;
               return (
-                <div
+                <FlavorRow
                   key={variant.id}
-                  className="flex items-center justify-between rounded-md border border-border/70 bg-surface px-3 py-2 text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    {variant.name}
-                    {!variant.active ? <Badge variant="neutral">inativo</Badge> : null}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="font-display font-semibold tabular-nums">{quantity} un</span>
-                    {canWrite ? <>
-                      <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => onSave(
-                        () => saveVariantAction({ id: variant.id, productId: product.id, name: variant.name, active: !variant.active }),
-                        variant.active ? "Sabor desativado." : "Sabor reativado.",
-                      )}>{variant.active ? "Desativar" : "Reativar"}</Button>
-                      {!variant.has_history ? <Button type="button" size="sm" variant="ghost" disabled={pending} aria-label={`Excluir ${variant.name}`} onClick={() => {
-                        if (window.confirm(`Excluir o sabor ${variant.name}? Esta ação não poderá ser desfeita.`)) {
-                          onSave(() => deleteVariantAction(variant.id), "Sabor excluído.");
-                        }
-                      }}><Trash2 /></Button> : null}
-                    </> : null}
-                  </span>
-                </div>
+                  variant={variant}
+                  quantity={quantity}
+                  canWrite={canWrite}
+                  pending={pending}
+                  onSave={onSave}
+                />
               );
             })}
             {variants.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum sabor cadastrado.</p>
+              <p className="text-sm text-muted-foreground">
+                {iceFilter !== "all" || flavorQuery.trim() ? "Nenhum sabor neste filtro." : "Nenhum sabor cadastrado."}
+              </p>
             ) : null}
           </div>
 
           {canWrite ? (
             <form
-              className="mt-3 flex gap-2"
+              className="mt-3 grid gap-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 onSave(
-                  () => saveVariantAction({ productId: product.id, name: flavor, active: true }),
+                  () =>
+                    saveVariantAction({
+                      productId: product.id,
+                      name: flavor,
+                      isIce: flavorIce,
+                      active: true,
+                    }),
                   "Sabor adicionado.",
                 );
                 setFlavor("");
+                setFlavorIce(false);
               }}
             >
-              <Input
-                className="h-11"
-                value={flavor}
-                onChange={(event) => setFlavor(event.target.value)}
-                placeholder="Novo sabor"
-                required
-              />
+              <Field label="Nome do sabor">
+                <Input
+                  className="h-11"
+                  value={flavor}
+                  onChange={(event) => setFlavor(event.target.value)}
+                  placeholder="Grape"
+                  required
+                />
+              </Field>
+              <FlavorIceCheckbox checked={flavorIce} onCheckedChange={setFlavorIce} />
+              <FlavorPreview name={flavor} isIce={flavorIce} />
               <Button type="submit" variant="outline" disabled={pending}>
                 <Plus />
                 Adicionar
@@ -311,6 +365,158 @@ function ProductCard({
         </div>
       ) : null}
     </Panel>
+  );
+}
+
+function FlavorPreview({ name, isIce }: { name: string; isIce: boolean }) {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const stored = normalizeFlavorName(trimmed, isIce);
+  const display = getFlavorDisplayName({ name: stored, is_ice: isIce });
+  return (
+    <div className="grid gap-1 text-xs text-muted-foreground">
+      <p>
+        Exibição: <span className="font-medium text-foreground">{display}</span>
+      </p>
+      {isIce && nameEndsWithIce(trimmed) && stored !== trimmed ? (
+        <p>O “Ice” do nome será separado. Cadastro: {stored} + É Ice.</p>
+      ) : null}
+      {!isIce && nameEndsWithIce(trimmed) ? (
+        <p>O nome termina em Ice. Marque “É Ice” para guardar só o sabor e evitar duplicar o sufixo.</p>
+      ) : null}
+    </div>
+  );
+}
+
+function FlavorRow({
+  variant,
+  quantity,
+  canWrite,
+  pending,
+  onSave,
+}: {
+  variant: ProductVariant;
+  quantity: number;
+  canWrite: boolean;
+  pending: boolean;
+  onSave: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(variant.name);
+  const [isIce, setIsIce] = useState(Boolean(variant.is_ice));
+  const displayName = getFlavorDisplayName(variant);
+
+  if (editing && canWrite) {
+    return (
+      <form
+        className="grid gap-2 rounded-md border border-border/70 bg-surface px-3 py-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave(
+            () =>
+              saveVariantAction({
+                id: variant.id,
+                productId: variant.product_id,
+                name,
+                isIce,
+                active: variant.active,
+              }),
+            "Sabor atualizado.",
+          );
+          setEditing(false);
+        }}
+      >
+        <Field label="Nome do sabor">
+          <Input className="h-11" value={name} onChange={(event) => setName(event.target.value)} required />
+        </Field>
+        <FlavorIceCheckbox checked={isIce} onCheckedChange={setIsIce} />
+        <FlavorPreview name={name} isIce={isIce} />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={pending}>
+            Salvar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setName(variant.name);
+              setIsIce(Boolean(variant.is_ice));
+              setEditing(false);
+            }}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-surface px-3 py-2 text-sm">
+      <span className="flex min-w-0 items-center gap-2">
+        <FlavorLabel name={variant.name} isIce={variant.is_ice} />
+        {!variant.active ? <Badge variant="neutral">inativo</Badge> : null}
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <span className="font-display font-semibold tabular-nums">{quantity} un</span>
+        {canWrite ? (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => {
+                setName(variant.name);
+                setIsIce(Boolean(variant.is_ice));
+                setEditing(true);
+              }}
+            >
+              <Pencil />
+              Editar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                onSave(
+                  () =>
+                    saveVariantAction({
+                      id: variant.id,
+                      productId: variant.product_id,
+                      name: variant.name,
+                      isIce: variant.is_ice,
+                      active: !variant.active,
+                    }),
+                  variant.active ? "Sabor desativado." : "Sabor reativado.",
+                )
+              }
+            >
+              {variant.active ? "Desativar" : "Reativar"}
+            </Button>
+            {!variant.has_history ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                aria-label={`Excluir ${displayName}`}
+                onClick={() => {
+                  if (window.confirm(`Excluir o sabor ${displayName}? Esta ação não poderá ser desfeita.`)) {
+                    onSave(() => deleteVariantAction(variant.id), "Sabor excluído.");
+                  }
+                }}
+              >
+                <Trash2 />
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+      </span>
+    </div>
   );
 }
 

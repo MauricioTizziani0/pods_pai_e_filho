@@ -17,6 +17,9 @@ export function dbErrorMessage(
   fallback = "Não foi possível concluir a operação.",
 ) {
   if (!error?.message) return fallback;
+  if (message.includes("is_ice")) {
+    return "Execute a migration supabase/migrations/20261001160000_variant_is_ice.sql no SQL Editor do Supabase.";
+  }
   if (isMissingSchema(error)) {
     return "O banco ainda não foi preparado. Execute a migration do Supabase descrita no README.";
   }

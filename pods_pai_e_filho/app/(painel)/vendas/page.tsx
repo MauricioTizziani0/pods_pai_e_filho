@@ -6,6 +6,7 @@ import { PageHeading } from "@/components/shell/page-heading";
 import { SaleList } from "@/components/sales/sale-list";
 import { Notice } from "@/components/feedback/notice";
 import { controlClass } from "@/components/ui/field";
+import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,8 @@ export default async function VendasPage({
       customerTypeId: params.tipo,
       paymentStatusId: params.status,
       credit: params.fiado,
+      ice: params.ice,
+      flavor: params.sabor,
       customer: params.cliente,
       situation: params.situacao,
     }),
@@ -94,12 +97,20 @@ export default async function VendasPage({
             <option value="sim">Só fiado</option>
             <option value="nao">Sem fiado</option>
           </select>
+          <IceFilterSelect defaultValue={params.ice} className={field} />
+          <input
+            className={field}
+            name="sabor"
+            placeholder="Sabor (ex.: Grape Ice)"
+            defaultValue={params.sabor ?? ""}
+            aria-label="Sabor"
+          />
           <select className={field} name="situacao" defaultValue={params.situacao ?? ""} aria-label="Situação">
             <option value="">Válidas</option>
             <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
           </select>
-          <button className={cn(buttonVariants(), "h-11 md:col-span-3")} type="submit">
+          <button className={cn(buttonVariants(), "h-11 md:col-span-4")} type="submit">
             Filtrar
           </button>
         </div>

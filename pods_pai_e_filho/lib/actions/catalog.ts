@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSessionState } from "@/lib/auth";
 import { dbErrorMessage } from "@/lib/errors";
+import { normalizeFlavorName } from "@/lib/domain/flavors";
 import { parseMoney, slugCode } from "@/lib/format";
 import { revalidateCommerce } from "@/lib/revalidate";
 import type { ActionResult } from "@/lib/types";
@@ -78,14 +79,16 @@ export async function saveVariantAction(input: {
   id?: string;
   productId: string;
   name: string;
+  isIce?: boolean;
   active: boolean;
 }): Promise<ActionResult> {
   const access = await writerClient();
   if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
-  const name = input.name.trim();
+  const isIce = Boolean(input.isIce);
+  const name = normalizeFlavorName(input.name, isIce);
   if (!name) return { ok: false, message: "Informe o sabor." };
 
-  const payload = { product_id: input.productId, name, active: input.active };
+  const payload = { product_id: input.productId, name, is_ice: isIce, active: input.active };
   const query = input.id
     ? access.supabase.from("product_variants").update(payload).eq("id", input.id).select("id").single()
     : access.supabase.from("product_variants").insert(payload).select("id").single();
