@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ClipboardCheck, Filter, History, Package } from "lucide-react";
 import { getSessionState } from "@/lib/auth";
 import { loadCatalog, loadLowStockThreshold } from "@/lib/data/catalog";
+import { summarizeActiveProductStock } from "@/lib/domain/stock";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
 import { matchesFlavorSearch, matchesIceFilter, parseIceParam } from "@/lib/domain/flavors";
@@ -9,7 +10,7 @@ import type { StockMovement } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { StockEntryForm } from "@/components/stock/stock-entry-form";
-import { IceBadge, StockBadge } from "@/components/sales/badges";
+import { IceBadge, StockBadge, VariantAvailabilityBadge } from "@/components/sales/badges";
 import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
@@ -55,11 +56,31 @@ export default async function EstoquePage({
       matchesFlavorSearch({ name: item.variant_name, is_ice: item.variant_is_ice }, flavorQuery),
   );
 
-  const groups = new Map<string, typeof visibleStock>();
+  const productById = new Map(catalog.data.products.map((product) => [product.id, product]));
+  const groups = new Map<string, { name: string; active: boolean; items: typeof visibleStock }>();
   for (const item of visibleStock) {
-    const list = groups.get(item.product_name) ?? [];
-    list.push(item);
-    groups.set(item.product_name, list);
+    const product = productById.get(item.product_id);
+    const group = groups.get(item.product_id) ?? {
+      name: item.product_name,
+      active: product?.active ?? item.product_active,
+      items: [],
+    };
+    group.items.push(item);
+    groups.set(item.product_id, group);
+  }
+  const hasVariant = new Set(catalog.data.variants.map((variant) => variant.product_id));
+  if (!flavorQuery.trim() && iceFilter === "all") {
+    for (const product of catalog.data.products) {
+      if (product.active && !hasVariant.has(product.id)) {
+        groups.set(product.id, { name: product.name, active: true, items: [] });
+      }
+    }
+  }
+  const productStock = summarizeActiveProductStock(catalog.data.products, catalog.data.stock);
+  const activeStockByProduct = new Map(productStock.map((product) => [product.product_id, product]));
+  const allStockByProduct = new Map<string, number>();
+  for (const item of catalog.data.stock) {
+    allStockByProduct.set(item.product_id, (allStockByProduct.get(item.product_id) ?? 0) + item.quantity);
   }
   const total = visibleStock.reduce((sum, item) => sum + item.quantity, 0);
   const field = cn(controlClass, "h-11");
@@ -93,26 +114,32 @@ export default async function EstoquePage({
       </form>
 
       <div className="stagger grid gap-3 md:grid-cols-2">
-        {[...groups.entries()].map(([product, items]) => {
-          const productTotal = items.reduce((sum, item) => sum + item.quantity, 0);
+        {[...groups.entries()].map(([productId, group]) => {
+          const items = group.items;
+          const activeProductStock = activeStockByProduct.get(productId);
+          const productTotal = group.active
+            ? activeProductStock?.quantity ?? 0
+            : allStockByProduct.get(productId) ?? 0;
           const max = Math.max(1, ...items.map((item) => item.quantity));
           return (
             <Panel
-              key={product}
-              title={product}
+              key={productId}
+              title={group.name}
               icon={Package}
               accent
               action={
-                <p className="text-right">
-                  <span className="block font-display text-2xl font-bold leading-none tabular-nums">{productTotal}</span>
-                  <span className="eyebrow text-[10px]">unidades</span>
-                </p>
+                <div className="grid justify-items-end gap-1">
+                  {group.active ? <StockBadge quantity={productTotal} threshold={threshold} /> : null}
+                  <p className="text-right">
+                    <span className="block font-display text-2xl font-bold leading-none tabular-nums">{productTotal}</span>
+                    <span className="eyebrow text-[10px]">estoque total</span>
+                  </p>
+                </div>
               }
             >
-              <ul className="grid gap-3">
-                {items.map((item) => {
-                  const lowStock = item.quantity <= threshold;
-                  return (
+              {items.length > 0 ? (
+                <ul className="grid gap-3">
+                  {items.map((item) => (
                     <li key={item.variant_id} className="grid gap-1.5">
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="flex min-w-0 items-center gap-2">
@@ -121,11 +148,11 @@ export default async function EstoquePage({
                           {!item.variant_active ? <Badge variant="neutral">inativo</Badge> : null}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
-                          <StockBadge quantity={item.quantity} threshold={threshold} />
+                          <VariantAvailabilityBadge quantity={item.quantity} />
                           <span
                             className={cn(
                               "w-8 text-right font-display font-semibold tabular-nums",
-                              lowStock && "text-warning",
+                              item.quantity <= 0 && "text-danger",
                             )}
                           >
                             {item.quantity}
@@ -134,14 +161,16 @@ export default async function EstoquePage({
                       </div>
                       <div className="bar-track h-1.5">
                         <div
-                          className={cn("bar-fill", lowStock && "bar-fill-muted")}
+                          className={cn("bar-fill", item.quantity <= 0 && "bar-fill-muted")}
                           style={{ width: `${Math.max(3, (item.quantity / max) * 100)}%` }}
                         />
                       </div>
                     </li>
-                  );
-                })}
-              </ul>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma variação cadastrada.</p>
+              )}
             </Panel>
           );
         })}

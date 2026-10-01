@@ -43,7 +43,7 @@ export async function saveProductAction(input: {
   };
 
   if (input.id) {
-    const { data: previous, error: previousError } = await access.supabase
+    const { error: previousError } = await access.supabase
       .from("products").select("name, brand, model, approximate_puffs, active").eq("id", input.id).single();
     if (previousError) return { ok: false, message: dbErrorMessage(previousError) };
   }

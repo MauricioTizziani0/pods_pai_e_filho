@@ -16,13 +16,12 @@ import {
 import { getSessionState } from "@/lib/auth";
 import { loadDashboard } from "@/lib/data/dashboard";
 import { formatBRL, formatDate, resolvePeriod } from "@/lib/format";
-import { getFlavorDisplayName } from "@/lib/domain/flavors";
+import { getLowStockProducts, summarizeActiveProductStock } from "@/lib/domain/stock";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { PaymentBadge, CreditBadge, StockBadge } from "@/components/sales/badges";
 import { StatCard } from "@/components/ui/stat-card";
 import { Panel } from "@/components/ui/panel";
-import { Badge } from "@/components/ui/badge";
 import { controlClass } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -52,18 +51,14 @@ export default async function InicioPage({
   const m = dashboard.metrics;
   const n = (value: string | number) => Number(value ?? 0) || 0;
 
-  const stockTotal = dashboard.stock.reduce((total, item) => total + item.quantity, 0);
-  const byProduct = new Map<string, number>();
-  for (const item of dashboard.stock) {
-    byProduct.set(item.product_name, (byProduct.get(item.product_name) ?? 0) + item.quantity);
-  }
-  const maxProduct = Math.max(1, ...byProduct.values());
-  const low = dashboard.stock.filter(
-    (item) =>
-      item.product_active &&
-      item.variant_active &&
-      item.quantity <= dashboard.lowStockThreshold,
+  const productStock = summarizeActiveProductStock(dashboard.products, dashboard.stock);
+  const stockTotal = productStock.reduce((total, product) => total + product.quantity, 0);
+  const byProduct = new Map(
+    productStock.map((product) => [product.product_id, { name: product.product_name, quantity: product.quantity }]),
   );
+  const maxProduct = Math.max(1, ...[...byProduct.values()].map((product) => product.quantity));
+  const activeStockByProduct = new Map(productStock.map((product) => [product.product_id, product]));
+  const low = getLowStockProducts(productStock, dashboard.lowStockThreshold);
 
   // Total vendido no período = parte do pai + lucro (soma de total_amount das vendas válidas).
   const soldTotal = n(m.transfer_total) + n(m.profit_total);
@@ -117,7 +112,7 @@ export default async function InicioPage({
           suffix="un"
           icon={Package}
           tone={low.length > 0 ? "warning" : "success"}
-          hint={low.length > 0 ? `${low.length} sabor(es) em nível baixo` : "Todos acima do limite"}
+          hint={low.length > 0 ? `${low.length} produto(s) com estoque baixo ou esgotado` : "Nenhum produto abaixo do limite"}
           href="/estoque"
           accent
         />
@@ -179,40 +174,50 @@ export default async function InicioPage({
             <p className="text-sm text-muted-foreground">Nenhum produto com estoque.</p>
           ) : (
             <ul className="grid gap-3">
-              {[...byProduct.entries()].map(([name, quantity]) => (
-                <li key={name} className="grid gap-1.5">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate font-medium">{name}</span>
-                    <span className="shrink-0 font-display font-semibold tabular-nums">{quantity} un</span>
-                  </div>
-                  <div className="bar-track">
-                    <div
-                      className={cn("bar-fill", quantity <= dashboard.lowStockThreshold && "bar-fill-muted")}
-                      style={{ width: `${Math.max(3, (quantity / maxProduct) * 100)}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
+              {[...byProduct.entries()].map(([productId, product]) => {
+                const activeProductStock = activeStockByProduct.get(productId);
+                const isLow =
+                  activeProductStock !== undefined &&
+                  activeProductStock.quantity <= dashboard.lowStockThreshold;
+                return (
+                  <li key={productId} className="grid gap-1.5">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate font-medium">{product.name}</span>
+                      <span className="shrink-0 font-display font-semibold tabular-nums">{product.quantity} un</span>
+                    </div>
+                    <div className="bar-track">
+                      <div
+                        className={cn("bar-fill", isLow && "bar-fill-muted")}
+                        style={{ width: `${Math.max(3, (product.quantity / maxProduct) * 100)}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
           <div className="mt-4 grid gap-2 border-t border-border/70 pt-4">
             {low.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+              <div className="grid gap-2 text-sm">
                 <span className="inline-flex items-center gap-1.5 text-warning">
                   <AlertTriangle className="h-4 w-4" /> Estoque baixo:
                 </span>
-                {low.map((item) => (
-                  <Badge key={item.variant_id} variant="warning">
-                    {item.product_name}{" "}
-                    {getFlavorDisplayName({ name: item.variant_name, is_ice: item.variant_is_ice })} · {item.quantity}
-                  </Badge>
+                {low.map((product) => (
+                  <div key={product.product_id} className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">{product.product_name}</span>
+                    <span className="flex items-center gap-2">
+                      <StockBadge quantity={product.quantity} threshold={dashboard.lowStockThreshold} />
+                      <span className="text-muted-foreground">
+                        {product.quantity} {product.quantity === 1 ? "unidade restante" : "unidades restantes"}
+                      </span>
+                    </span>
+                  </div>
                 ))}
               </div>
             ) : (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <StockBadge quantity={stockTotal} threshold={dashboard.lowStockThreshold} />
-                Nenhum sabor abaixo do limite.
+              <p className="text-sm text-muted-foreground">
+                Nenhum produto abaixo do limite de estoque baixo.
               </p>
             )}
             {dashboard.divergences.length > 0 ? (

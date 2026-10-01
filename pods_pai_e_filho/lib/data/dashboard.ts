@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchema } from "@/lib/errors";
-import type { Metrics, SaleOverview, StockBalance, StockDivergence } from "@/lib/types";
+import type { Metrics, Product, SaleOverview, StockBalance, StockDivergence } from "@/lib/types";
 
 const emptyMetrics = (): Metrics => ({
   money_received: "0",
@@ -32,15 +32,16 @@ export async function loadDashboard(from: string | null, to: string | null) {
   if (from) recent = recent.gte("sale_date", from);
   if (to) recent = recent.lte("sale_date", to);
 
-  const [metrics, sales, stock, divergences, threshold] = await Promise.all([
+  const [metrics, sales, stock, products, divergences, threshold] = await Promise.all([
     metricsQuery,
     recent,
     supabase.from("stock_balances").select("*").order("product_name"),
+    supabase.from("products").select("id, name, active").order("name"),
     supabase.from("stock_divergences").select("*"),
     supabase.from("app_settings").select("value").eq("key", "low_stock_threshold").maybeSingle(),
   ]);
 
-  const error = metrics.error || sales.error || stock.error;
+  const error = metrics.error || sales.error || stock.error || products.error;
   if (error) {
     return {
       ok: false as const,
@@ -63,6 +64,7 @@ export async function loadDashboard(from: string | null, to: string | null) {
     },
     sales: (sales.data ?? []) as SaleOverview[],
     stock: (stock.data ?? []) as StockBalance[],
+    products: (products.data ?? []) as Pick<Product, "id" | "name" | "active">[],
     divergences: ((divergences.data ?? []) as StockDivergence[]).filter(
       (item) => item.difference !== 0,
     ),

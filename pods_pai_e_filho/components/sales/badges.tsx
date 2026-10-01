@@ -45,6 +45,11 @@ export function StockBadge({ quantity, threshold }: { quantity: number; threshol
   return <Badge variant="success">Em estoque</Badge>;
 }
 
+export function VariantAvailabilityBadge({ quantity }: { quantity: number }) {
+  if (quantity <= 0) return <Badge variant="danger">Esgotado</Badge>;
+  return <Badge variant="success">Disponível</Badge>;
+}
+
 export function IceBadge({ className }: { className?: string }) {
   return (
     <Badge variant="info" className={cn("gap-1", className)} title="Sabor Ice">

@@ -89,7 +89,7 @@ export function SettingsPanel({
               run(() => setLowStockThresholdAction(Number(limit)), "Limite de estoque baixo atualizado.");
             }}
           >
-            <Field label="Estoque baixo a partir de" hint="O dashboard destaca sabores com quantidade igual ou menor.">
+            <Field label="Estoque baixo a partir de" hint="O alerta considera o total de unidades do produto.">
               <Input
                 className="h-12 font-display text-lg font-semibold"
                 type="number"
