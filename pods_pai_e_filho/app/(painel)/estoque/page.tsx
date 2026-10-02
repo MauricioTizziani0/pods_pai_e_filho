@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { controlClass } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Estoque" };
 
@@ -32,6 +33,7 @@ export default async function EstoquePage({
     loadLowStockThreshold(),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
   if (!catalog.ok) {
     return (
       <div>
@@ -90,7 +92,7 @@ export default async function EstoquePage({
       <PageHeading
         title="Estoque"
         eyebrow={`${total} unidades`}
-        description="O saldo vem das movimentações. Venda, fiado ou a receber baixam na hora."
+        description={consultas ? "O saldo vem das movimentações. Toda venda reduz o estoque na hora." : "O saldo vem das movimentações. Venda, fiado ou a receber baixam na hora."}
         action={{ href: "/estoque/conferencia", label: "Conferir" }}
       />
 

@@ -6,12 +6,13 @@ import { SaleList } from "@/components/sales/sale-list";
 import { StatCard } from "@/components/ui/stat-card";
 import { getSessionState } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Fiados" };
 
 export default async function FiadosPage() {
   const session = await getSessionState();
-  if (session.status === "ok" && !session.profile.can_write) redirect("/repasses");
+  if (session.status === "ok" && (isConsultasRole(session.profile.role_code) || !session.profile.can_write)) redirect("/repasses");
   const sales = await listSales({ openCredit: true });
   const totals = sales.ok
     ? sales.sales.reduce(

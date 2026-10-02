@@ -5,7 +5,7 @@ Controle de estoque, vendas, valores a receber, lucro e repasses da sociedade en
 ## Preparar
 
 1. Crie um projeto no [Supabase](https://database.new).
-2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_pods_init.sql`, `20261001150000_product_safety.sql`, `20261001160000_variant_is_ice.sql` e `20261002100000_consultas_cost_snapshots.sql`.
+2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_pods_init.sql`, `20261001150000_product_safety.sql`, `20261001160000_variant_is_ice.sql`, `20261002100000_consultas_cost_snapshots.sql` e `20261002110000_consultas_hide_credit_filter.sql`.
 3. Copie `.env.example` para `.env.local` e preencha:
 
 ```env

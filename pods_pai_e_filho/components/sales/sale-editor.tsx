@@ -31,14 +31,15 @@ export function SaleEditor({
   catalog,
   audit,
   canWrite,
+  consultas,
 }: {
   sale: SaleOverview;
   items: SaleItem[];
   catalog: CatalogSnapshot;
   audit: AuditLog[];
   canWrite: boolean;
+  consultas: boolean;
 }) {
-  const consultas = !canWrite;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export function SaleEditor({
   const [statusId, setStatusId] = useState(sale.payment_status_id);
   const [variantId, setVariantId] = useState(sale.variant_id ?? "");
   const [quantity, setQuantity] = useState(sale.quantity);
-  const [fiado, setFiado] = useState(sale.is_credit);
+  const [fiado, setFiado] = useState(sale.is_credit === true);
   const [notes, setNotes] = useState(sale.notes ?? "");
 
   const products = catalog.products.filter((product) => product.active);
@@ -67,7 +68,7 @@ export function SaleEditor({
   const status = statuses.find((item) => item.id === statusId);
   const received = Boolean(status?.counts_as_received);
   const locked = sale.transfer_paid;
-  const fiadoChecked = received ? sale.is_credit : fiado;
+  const fiadoChecked = received ? sale.is_credit === true : fiado;
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -94,7 +95,7 @@ export function SaleEditor({
             received={sale.counts_as_received}
             cancelled={!sale.is_valid}
           />
-          {sale.is_credit ? <CreditBadge /> : null}
+          {!consultas && sale.is_credit ? <CreditBadge /> : null}
           <TransferBadge
             paid={sale.transfer_paid}
             dueNow={sale.transfer_due_now}
@@ -141,7 +142,7 @@ export function SaleEditor({
                   <Money label="Meu lucro" value={item.line_father_profit} fallback="Custo histórico não informado" tone="text-success" />
                 </dl>
                 <p className="break-words text-xs text-muted-foreground">
-                  Pagamento: {sale.payment_status_name}{sale.is_credit ? " · Fiado" : ""} · Repasse: {sale.transfer_paid ? "Recebido" : sale.transfer_due_now ? "Pendente agora" : sale.transfer_is_future ? "Futuro" : "Sem pendência"}
+                  Pagamento: {sale.payment_status_name} · Repasse: {sale.transfer_paid ? "Recebido" : sale.transfer_due_now ? "Pendente agora" : sale.transfer_is_future ? "Futuro" : "Sem pendência"}
                 </p>
               </li>
             ))}
@@ -163,7 +164,7 @@ export function SaleEditor({
                   customerName,
                   customerTypeId: typeId,
                   paymentStatusId: statusId,
-                  isCredit: received ? sale.is_credit : fiado,
+                  isCredit: received ? sale.is_credit === true : fiado,
                   notes,
                   variantId,
                   quantity,

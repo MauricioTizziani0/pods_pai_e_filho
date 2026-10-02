@@ -199,7 +199,7 @@ export function TransferBoard({
                     ) : null}
                     <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span className="break-words">Venda {formatBRL(sale.total_amount)}</span>
-                      {sale.is_credit ? <Badge variant="danger">Fiado</Badge> : null}
+                      {!consultas && sale.is_credit ? <Badge variant="danger">Fiado</Badge> : null}
                       {sale.transfer_paid_at ? (
                         <Badge variant="success">{consultas ? "recebido em" : "pago em"} {formatDateTime(sale.transfer_paid_at)}</Badge>
                       ) : null}

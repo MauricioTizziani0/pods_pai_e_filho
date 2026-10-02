@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchema } from "@/lib/errors";
+import { CONSULTAS_SALE_OVERVIEW_COLUMNS } from "@/lib/data/sales";
 import type { ConsultasFinancialSummary, Metrics, Product, SaleOverview, StockBalance, StockDivergence } from "@/lib/types";
 
 const emptyMetrics = (): Metrics => ({
@@ -15,16 +16,22 @@ const emptyMetrics = (): Metrics => ({
   units_sold: 0,
 });
 
-export async function loadDashboard(from: string | null, to: string | null) {
+export async function loadDashboard(
+  from: string | null,
+  to: string | null,
+  { consultas = false }: { consultas?: boolean } = {},
+) {
   const supabase = await createClient();
-  const metricsQuery = supabase.rpc("dashboard_metrics", {
-    p_from: from,
-    p_to: to,
-  });
+  const metricsQuery = consultas
+    ? Promise.resolve({ data: null, error: null })
+    : supabase.rpc("dashboard_metrics", {
+        p_from: from,
+        p_to: to,
+      });
 
   let recent = supabase
     .from("sales_overview")
-    .select("*")
+    .select(consultas ? CONSULTAS_SALE_OVERVIEW_COLUMNS : "*")
     .eq("is_valid", true)
     .order("sale_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -41,17 +48,17 @@ export async function loadDashboard(from: string | null, to: string | null) {
     supabase.from("app_settings").select("value").eq("key", "low_stock_threshold").maybeSingle(),
   ]);
 
-  const error = metrics.error || sales.error || stock.error || products.error;
-  if (error) {
+  const dataError = sales.error || stock.error || products.error || ("error" in metrics ? metrics.error : null);
+  if (dataError) {
     return {
       ok: false as const,
-      message: isMissingSchema(error)
+      message: isMissingSchema(dataError)
         ? "Execute a migration SQL no Supabase antes de usar o sistema."
-        : error.message,
+        : dataError.message,
     };
   }
 
-  const row = (metrics.data?.[0] ?? emptyMetrics()) as Metrics;
+  const row = (("data" in metrics ? metrics.data?.[0] : null) ?? emptyMetrics()) as Metrics;
   const thresholdValue = Number(threshold.data?.value ?? 5);
 
   return {
@@ -62,7 +69,7 @@ export async function loadDashboard(from: string | null, to: string | null) {
       sales_count: Number(row.sales_count ?? 0),
       units_sold: Number(row.units_sold ?? 0),
     },
-    sales: (sales.data ?? []) as SaleOverview[],
+    sales: (sales.data ?? []) as unknown as SaleOverview[],
     stock: (stock.data ?? []) as StockBalance[],
     products: (products.data ?? []) as Pick<Product, "id" | "name" | "active">[],
     divergences: ((divergences.data ?? []) as StockDivergence[]).filter(
@@ -81,7 +88,6 @@ export async function loadConsultasFinancialSummary(
     customerName?: string | null;
     customerTypeId?: string | null;
     paymentStatusId?: string | null;
-    credit?: boolean | null;
     ice?: boolean | null;
     flavor?: string | null;
   } = {},
@@ -95,7 +101,6 @@ export async function loadConsultasFinancialSummary(
     p_customer_name: filters.customerName ?? null,
     p_customer_type_id: filters.customerTypeId ?? null,
     p_payment_status_id: filters.paymentStatusId ?? null,
-    p_is_credit: filters.credit ?? null,
     p_is_ice: filters.ice ?? null,
     p_flavor: filters.flavor ?? null,
   });

@@ -103,7 +103,7 @@ export type SaleOverview = {
   customer_type_id: string;
   customer_type_name: string;
   payment_status_id: string;
-  is_credit: boolean;
+  is_credit?: boolean;
   notes: string | null;
   total_amount: string;
   transfer_amount: string;

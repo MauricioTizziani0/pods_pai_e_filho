@@ -12,6 +12,7 @@ import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { buttonVariants } from "@/components/ui/button";
 import { iceFilterToBool, parseIceParam } from "@/lib/domain/flavors";
 import { cn } from "@/lib/utils";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Relatórios" };
 
@@ -27,8 +28,8 @@ export default async function RelatoriosPage({
     ate: params.ate,
   });
   const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
-  const consultas = session.status === "ok" && !session.profile.can_write;
-  const credit = params.fiado === "sim" ? true : params.fiado === "nao" ? false : null;
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
+  const credit = consultas ? null : params.fiado === "sim" ? true : params.fiado === "nao" ? false : null;
   const ice = iceFilterToBool(parseIceParam(params.ice));
   let reportError: string | null = null;
   let consultasSummary: Awaited<ReturnType<typeof loadConsultasFinancialSummary>> | null = null;
@@ -43,7 +44,6 @@ export default async function RelatoriosPage({
       customerName: params.cliente,
       customerTypeId: params.tipo,
       paymentStatusId: params.status,
-      credit,
       ice,
       flavor: params.sabor,
     });
@@ -119,11 +119,13 @@ export default async function RelatoriosPage({
                   ))
               : null}
           </select>
-          <select className={field} name="fiado" defaultValue={params.fiado ?? ""} aria-label="Fiado">
-            <option value="">Fiado: todos</option>
-            <option value="sim">Só fiado</option>
-            <option value="nao">Sem fiado</option>
-          </select>
+          {!consultas ? (
+            <select className={field} name="fiado" defaultValue={params.fiado ?? ""} aria-label="Fiado">
+              <option value="">Fiado: todos</option>
+              <option value="sim">Só fiado</option>
+              <option value="nao">Sem fiado</option>
+            </select>
+          ) : null}
           <IceFilterSelect defaultValue={params.ice} className={field} />
           <input
             className={field}

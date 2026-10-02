@@ -6,15 +6,17 @@ import { formatDate, shortId } from "@/lib/format";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SaleEditor } from "@/components/sales/sale-editor";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Venda" };
 
 export default async function VendaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [sale, catalog, session] = await Promise.all([
-    getSale(id),
+  const session = await getSessionState();
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
+  const [sale, catalog] = await Promise.all([
+    getSale(id, consultas),
     loadCatalog(),
-    getSessionState(),
   ]);
 
   if (!sale.ok) {
@@ -33,7 +35,7 @@ export default async function VendaPage({ params }: { params: Promise<{ id: stri
         back={{ href: "/vendas", label: "Voltar às vendas" }}
         description={`${formatDate(sale.sale.sale_date)} · ${sale.sale.product_name} · ${sale.sale.variant_name}`}
       />
-      <SaleEditor sale={sale.sale} items={sale.items} catalog={catalog.data} audit={sale.audit} canWrite={canWrite} />
+      <SaleEditor sale={sale.sale} items={sale.items} catalog={catalog.data} audit={sale.audit} canWrite={canWrite} consultas={consultas} />
     </div>
   );
 }

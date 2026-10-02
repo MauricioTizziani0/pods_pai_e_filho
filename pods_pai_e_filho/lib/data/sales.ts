@@ -2,6 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { flavorSearchOrFilter, iceFilterToBool, parseIceParam } from "@/lib/domain/flavors";
 import type { AuditLog, SaleItem, SaleOverview } from "@/lib/types";
 
+export const CONSULTAS_SALE_OVERVIEW_COLUMNS = [
+  "id", "sale_date", "customer_id", "customer_name", "customer_type_id", "customer_type_name",
+  "payment_status_id", "notes", "total_amount", "transfer_amount", "profit_amount", "transfer_paid",
+  "transfer_paid_at", "transfer_id", "cancelled_at", "cancelled_by", "cancel_reason", "created_by",
+  "created_at", "payment_status_code", "payment_status_name", "counts_as_received", "counts_as_receivable",
+  "is_terminal", "is_valid", "transfer_due_now", "transfer_is_future", "quantity", "items_label",
+  "product_id", "product_name", "variant_id", "variant_name", "unit_price", "unit_transfer", "unit_profit",
+  "variant_is_ice",
+].join(",");
+
 export type SaleQuery = {
   from?: string;
   to?: string;
@@ -17,6 +27,7 @@ export type SaleQuery = {
   future?: boolean;
   paid?: boolean;
   openCredit?: boolean;
+  consultas?: boolean;
   limit?: number;
 };
 
@@ -36,7 +47,7 @@ export async function listSales(query: SaleQuery = {}) {
   const supabase = await createClient();
   let request = supabase
     .from("sales_overview")
-    .select("*")
+    .select(query.consultas ? CONSULTAS_SALE_OVERVIEW_COLUMNS : "*")
     .order("sale_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(query.limit ?? 200);
@@ -46,8 +57,8 @@ export async function listSales(query: SaleQuery = {}) {
   if (query.productId) request = request.eq("product_id", query.productId);
   if (query.customerTypeId) request = request.eq("customer_type_id", query.customerTypeId);
   if (query.paymentStatusId) request = request.eq("payment_status_id", query.paymentStatusId);
-  if (query.credit === "sim") request = request.eq("is_credit", true);
-  if (query.credit === "nao") request = request.eq("is_credit", false);
+  if (!query.consultas && query.credit === "sim") request = request.eq("is_credit", true);
+  if (!query.consultas && query.credit === "nao") request = request.eq("is_credit", false);
   const ice = iceFilterToBool(parseIceParam(query.ice));
   if (ice === true) request = request.eq("variant_is_ice", true);
   if (ice === false) request = request.eq("variant_is_ice", false);
@@ -61,7 +72,7 @@ export async function listSales(query: SaleQuery = {}) {
   if (query.dueNow) request = request.eq("transfer_due_now", true);
   if (query.future) request = request.eq("transfer_is_future", true);
   if (query.paid) request = request.eq("transfer_paid", true).eq("is_valid", true);
-  if (query.openCredit) {
+  if (!query.consultas && query.openCredit) {
     request = request
       .eq("is_credit", true)
       .eq("counts_as_receivable", true)
@@ -70,7 +81,7 @@ export async function listSales(query: SaleQuery = {}) {
 
   const { data, error } = await request;
   if (error) return { ok: false as const, message: error.message, sales: [] as SaleOverview[] };
-  const sales = (data ?? []) as SaleOverview[];
+  const sales = (data ?? []) as unknown as SaleOverview[];
   if (sales.length === 0) return { ok: true as const, message: "", sales };
 
   const { data: itemRows, error: itemError } = await supabase
@@ -92,17 +103,24 @@ export async function listSales(query: SaleQuery = {}) {
   };
 }
 
-export async function getSale(id: string) {
+export async function getSale(id: string, consultas = false) {
   const supabase = await createClient();
+  const auditQuery = consultas
+    ? Promise.resolve({ data: [] })
+    : supabase
+        .from("audit_logs")
+        .select("id, action, entity_type, entity_id, metadata, created_at, profiles(full_name)")
+        .eq("entity_type", "sales")
+        .eq("entity_id", id)
+        .order("created_at", { ascending: false });
   const [sale, items, audit] = await Promise.all([
-    supabase.from("sales_overview").select("*").eq("id", id).maybeSingle(),
-    supabase.from("sale_items").select("*").eq("sale_id", id).order("created_at"),
     supabase
-      .from("audit_logs")
-      .select("id, action, entity_type, entity_id, metadata, created_at, profiles(full_name)")
-      .eq("entity_type", "sales")
-      .eq("entity_id", id)
-      .order("created_at", { ascending: false }),
+      .from("sales_overview")
+      .select(consultas ? CONSULTAS_SALE_OVERVIEW_COLUMNS : "*")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase.from("sale_items").select("*").eq("sale_id", id).order("created_at"),
+    auditQuery,
   ]);
 
   if (sale.error) return { ok: false as const, message: sale.error.message };
@@ -125,7 +143,7 @@ export async function getSale(id: string) {
 
   return {
     ok: true as const,
-    sale: withCostFigures(sale.data as SaleOverview, ((items.data ?? []) as SaleItem[]).map((item) => ({
+    sale: withCostFigures(sale.data as unknown as SaleOverview, ((items.data ?? []) as SaleItem[]).map((item) => ({
       cost_price_unit: item.cost_price_unit,
       line_cost: item.line_cost,
       line_father_profit: item.line_father_profit,

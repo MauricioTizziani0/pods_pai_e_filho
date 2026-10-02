@@ -9,6 +9,7 @@ import { controlClass } from "@/components/ui/field";
 import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Vendas" };
 
@@ -18,7 +19,9 @@ export default async function VendasPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [catalog, sales, session] = await Promise.all([
+  const session = await getSessionState();
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
+  const [catalog, sales] = await Promise.all([
     loadCatalog(),
     listSales({
       from: params.de,
@@ -26,16 +29,15 @@ export default async function VendasPage({
       productId: params.produto,
       customerTypeId: params.tipo,
       paymentStatusId: params.status,
-      credit: params.fiado,
+      credit: consultas ? undefined : params.fiado,
+      consultas,
       ice: params.ice,
       flavor: params.sabor,
       customer: params.cliente,
       situation: params.situacao,
     }),
-    getSessionState(),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
-  const consultas = session.status === "ok" && !session.profile.can_write;
   const field = cn(controlClass, "h-11");
 
   return (
@@ -93,11 +95,13 @@ export default async function VendasPage({
                   ))
               : null}
           </select>
-          <select className={field} name="fiado" defaultValue={params.fiado ?? ""} aria-label="Fiado">
-            <option value="">Fiado: todos</option>
-            <option value="sim">Só fiado</option>
-            <option value="nao">Sem fiado</option>
-          </select>
+          {!consultas ? (
+            <select className={field} name="fiado" defaultValue={params.fiado ?? ""} aria-label="Fiado">
+              <option value="">Fiado: todos</option>
+              <option value="sim">Só fiado</option>
+              <option value="nao">Sem fiado</option>
+            </select>
+          ) : null}
           <IceFilterSelect defaultValue={params.ice} className={field} />
           <input
             className={field}

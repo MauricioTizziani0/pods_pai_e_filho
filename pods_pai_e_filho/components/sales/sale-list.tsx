@@ -58,7 +58,7 @@ export function SaleList({ sales, consultas = false }: { sales: SaleOverview[]; 
                         received={sale.counts_as_received}
                         cancelled={!sale.is_valid}
                       />
-                      {sale.is_credit ? <CreditBadge /> : null}
+                      {!consultas && sale.is_credit ? <CreditBadge /> : null}
                       <TransferBadge
                         paid={sale.transfer_paid}
                         dueNow={sale.transfer_due_now}
@@ -113,7 +113,7 @@ export function SaleList({ sales, consultas = false }: { sales: SaleOverview[]; 
                 received={sale.counts_as_received}
                 cancelled={!sale.is_valid}
               />
-              {sale.is_credit ? <CreditBadge /> : null}
+              {!consultas && sale.is_credit ? <CreditBadge /> : null}
               <TransferBadge
                 paid={sale.transfer_paid}
                 dueNow={sale.transfer_due_now}

@@ -27,6 +27,7 @@ import { Panel } from "@/components/ui/panel";
 import { controlClass } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Dashboard" };
 
@@ -39,7 +40,8 @@ export default async function InicioPage({
   const period = resolvePeriod(params);
   const session = await getSessionState();
   const canWrite = session.status === "ok" && session.profile.can_write;
-  const dashboard = await loadDashboard(period.from, period.to);
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
+  const dashboard = await loadDashboard(period.from, period.to, { consultas });
 
   if (!dashboard.ok) {
     return (
@@ -50,7 +52,7 @@ export default async function InicioPage({
     );
   }
 
-  if (!canWrite) {
+  if (consultas) {
     const financial = await loadConsultasFinancialSummary(period.from, period.to);
     if (!financial.ok) {
       return (

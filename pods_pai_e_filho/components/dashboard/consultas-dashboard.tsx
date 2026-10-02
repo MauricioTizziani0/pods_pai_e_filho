@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Banknote, Clock, HandCoins, Package, PiggyBank, Receipt, Send, TrendingUp, type LucideIcon } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Panel } from "@/components/ui/panel";
-import { PaymentBadge, CreditBadge, StockBadge } from "@/components/sales/badges";
+import { PaymentBadge, StockBadge } from "@/components/sales/badges";
 import { formatBRL, formatDate } from "@/lib/format";
 import { getLowStockProducts, summarizeActiveProductStock } from "@/lib/domain/stock";
 import type { ConsultasFinancialSummary } from "@/lib/types";
@@ -94,7 +94,7 @@ export function ConsultasDashboard({
       </section>
 
       <Panel title="Vendas recentes" description={`${summary.sales_count} venda(s) · ${summary.units_sold} unidade(s) no período`} icon={Receipt} action={<Link href="/vendas" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">Ver todas <ArrowRight className="h-3.5 w-3.5" /></Link>} bodyClassName="p-0">
-        {dashboard.sales.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhuma venda neste recorte.</p> : <ul className="divide-y divide-border/70">{dashboard.sales.map((sale) => <li key={sale.id}><Link href={`/vendas/${sale.id}`} className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground"><Receipt className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="break-words font-medium">{sale.customer_name}</p><p className="mt-0.5 break-words text-xs text-muted-foreground">{formatDate(sale.sale_date)} · {sale.items_label}</p></div><div className="flex min-w-0 shrink-0 flex-col items-end gap-1"><span className="break-words text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span><span className="flex flex-wrap justify-end gap-1"><PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} />{sale.is_credit ? <CreditBadge /> : null}</span></div></Link></li>)}</ul>}
+        {dashboard.sales.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhuma venda neste recorte.</p> : <ul className="divide-y divide-border/70">{dashboard.sales.map((sale) => <li key={sale.id}><Link href={`/vendas/${sale.id}`} className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground"><Receipt className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="break-words font-medium">{sale.customer_name}</p><p className="mt-0.5 break-words text-xs text-muted-foreground">{formatDate(sale.sale_date)} · {sale.items_label}</p></div><div className="flex min-w-0 shrink-0 flex-col items-end gap-1"><span className="break-words text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span><span className="flex flex-wrap justify-end gap-1"><PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} /></span></div></Link></li>)}</ul>}
       </Panel>
     </div>
   );

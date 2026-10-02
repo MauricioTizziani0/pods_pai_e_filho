@@ -4,18 +4,19 @@ import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { TransferBoard } from "@/components/transfers/transfer-board";
 import { loadConsultasFinancialSummary } from "@/lib/data/dashboard";
+import { isConsultasRole } from "@/lib/domain/roles";
 
 export const metadata = { title: "Repasses" };
 
 export default async function RepassesPage() {
-  const [dueNow, future, paid, session] = await Promise.all([
-    listSales({ dueNow: true, limit: 300 }),
-    listSales({ future: true, limit: 300 }),
-    listSales({ paid: true, limit: 300 }),
-    getSessionState(),
+  const session = await getSessionState();
+  const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
+  const [dueNow, future, paid] = await Promise.all([
+    listSales({ dueNow: true, limit: 300, consultas }),
+    listSales({ future: true, limit: 300, consultas }),
+    listSales({ paid: true, limit: 300, consultas }),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
-  const consultas = session.status === "ok" && !session.profile.can_write;
   const error = [dueNow, future, paid].find((result) => !result.ok);
   const summary = consultas ? await loadConsultasFinancialSummary(null, null) : null;
 
