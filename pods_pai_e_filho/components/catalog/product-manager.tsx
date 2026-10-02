@@ -16,7 +16,7 @@ import { formatBRL, moneyToInput, parseMoney } from "@/lib/format";
 import type { CatalogSnapshot, Product, ProductVariant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field } from "@/components/ui/field";
+import { Field, TextArea } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,11 @@ import { cn } from "@/lib/utils";
 export function ProductManager({
   catalog,
   canWrite,
+  isAdmin,
 }: {
   catalog: CatalogSnapshot;
   canWrite: boolean;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,9 @@ export function ProductManager({
   const [model, setModel] = useState("");
   const [puffs, setPuffs] = useState("");
   const [costPrice, setCostPrice] = useState("");
+  const [promotionName, setPromotionName] = useState("");
+  const [promotionFeatures, setPromotionFeatures] = useState("");
+  const [displayOrder, setDisplayOrder] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [iceFilter, setIceFilter] = useState<IceFilter>("all");
   const [flavorQuery, setFlavorQuery] = useState("");
@@ -89,6 +94,7 @@ export function ProductManager({
                   approximatePuffs: puffs,
                   costPrice,
                   active: true,
+                  ...(isAdmin ? { promotionName, promotionFeatures, displayOrder } : {}),
                 });
                 if (!result.ok) {
                   setError(result.message);
@@ -100,6 +106,9 @@ export function ProductManager({
                 setModel("");
                 setPuffs("");
                 setCostPrice("");
+                setPromotionName("");
+                setPromotionFeatures("");
+                setDisplayOrder("");
                 router.refresh();
               });
             }}
@@ -113,12 +122,25 @@ export function ProductManager({
             <Field label="Modelo">
               <Input className="h-12" value={model} onChange={(event) => setModel(event.target.value)} />
             </Field>
-            <Field label="Puffs aproximados">
+            {!isAdmin ? <Field label="Puffs aproximados">
               <Input className="h-12" inputMode="numeric" value={puffs} onChange={(event) => setPuffs(event.target.value)} />
-            </Field>
+            </Field> : null}
             <Field label="Preço de custo" hint="Obrigatório antes de registrar uma venda deste produto.">
               <Input className="h-12" inputMode="decimal" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} placeholder="0,00" />
             </Field>
+            {isAdmin ? (
+              <PromotionFields
+                idPrefix="new-product"
+                promotionName={promotionName}
+                setPromotionName={setPromotionName}
+                puffs={puffs}
+                setPuffs={setPuffs}
+                promotionFeatures={promotionFeatures}
+                setPromotionFeatures={setPromotionFeatures}
+                displayOrder={displayOrder}
+                setDisplayOrder={setDisplayOrder}
+              />
+            ) : null}
             <Button type="submit" size="lg" className="md:col-span-2" disabled={pending}>
               <Plus />
               Cadastrar produto
@@ -161,6 +183,7 @@ export function ProductManager({
             catalog={catalog}
             types={types}
             canWrite={canWrite}
+            isAdmin={isAdmin}
             pending={pending}
             iceFilter={iceFilter}
             flavorQuery={flavorQuery}
@@ -181,6 +204,7 @@ function ProductCard({
   catalog,
   types,
   canWrite,
+  isAdmin,
   pending,
   iceFilter,
   flavorQuery,
@@ -191,6 +215,7 @@ function ProductCard({
   catalog: CatalogSnapshot;
   types: CatalogSnapshot["customerTypes"];
   canWrite: boolean;
+  isAdmin: boolean;
   pending: boolean;
   iceFilter: IceFilter;
   flavorQuery: string;
@@ -205,6 +230,9 @@ function ProductCard({
   const [model, setModel] = useState(product.model);
   const [puffs, setPuffs] = useState(product.approximate_puffs?.toString() ?? "");
   const [costPrice, setCostPrice] = useState(product.cost_price == null ? "" : moneyToInput(product.cost_price));
+  const [promotionName, setPromotionName] = useState(product.promotion_name ?? "");
+  const [promotionFeatures, setPromotionFeatures] = useState((product.promotion_features ?? []).join("\n"));
+  const [displayOrder, setDisplayOrder] = useState(product.display_order?.toString() ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const variants = catalog.variants.filter(
     (variant) =>
@@ -241,13 +269,45 @@ function ProductCard({
     >
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {editing ? (
-          <form className="grid gap-3 md:grid-cols-2 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); onSave(() => saveProductAction({ id: product.id, name, brand, model, approximatePuffs: puffs, costPrice, active: product.active }), "Produto atualizado."); setEditing(false); }}>
+          <form
+            className="grid min-w-0 gap-3 md:grid-cols-2 lg:col-span-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSave(async () => {
+                const result = await saveProductAction({
+                  id: product.id,
+                  name,
+                  brand,
+                  model,
+                  approximatePuffs: puffs,
+                  costPrice,
+                  active: product.active,
+                  ...(isAdmin ? { promotionName, promotionFeatures, displayOrder } : {}),
+                });
+                if (result.ok) setEditing(false);
+                return result;
+              }, "Produto atualizado.");
+            }}
+          >
             <Field label="Nome"><Input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
             <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(e.target.value)} /></Field>
             <Field label="Modelo"><Input value={model} onChange={(e) => setModel(e.target.value)} /></Field>
-            <Field label="Puffs aproximados"><Input inputMode="numeric" value={puffs} onChange={(e) => setPuffs(e.target.value)} /></Field>
+            {!isAdmin ? <Field label="Puffs aproximados"><Input inputMode="numeric" value={puffs} onChange={(e) => setPuffs(e.target.value)} /></Field> : null}
             <Field label="Preço de custo" hint="Obrigatório antes de registrar uma venda."><Input inputMode="decimal" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} placeholder="0,00" /></Field>
-            <div className="flex gap-2"><Button type="submit" disabled={pending}>Salvar alterações</Button><Button type="button" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button></div>
+            {isAdmin ? (
+              <PromotionFields
+                idPrefix={`product-${product.id}`}
+                promotionName={promotionName}
+                setPromotionName={setPromotionName}
+                puffs={puffs}
+                setPuffs={setPuffs}
+                promotionFeatures={promotionFeatures}
+                setPromotionFeatures={setPromotionFeatures}
+                displayOrder={displayOrder}
+                setDisplayOrder={setDisplayOrder}
+              />
+            ) : null}
+            <div className="flex flex-wrap gap-2 md:col-span-2"><Button type="submit" disabled={pending}>Salvar alterações</Button><Button type="button" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button></div>
           </form>
         ) : null}
         {/* Sabores */}
@@ -381,6 +441,46 @@ function ProductCard({
         </div>
       ) : null}
     </Panel>
+  );
+}
+
+function PromotionFields({
+  idPrefix,
+  promotionName,
+  setPromotionName,
+  puffs,
+  setPuffs,
+  promotionFeatures,
+  setPromotionFeatures,
+  displayOrder,
+  setDisplayOrder,
+}: {
+  idPrefix: string;
+  promotionName: string;
+  setPromotionName: (value: string) => void;
+  puffs: string;
+  setPuffs: (value: string) => void;
+  promotionFeatures: string;
+  setPromotionFeatures: (value: string) => void;
+  displayOrder: string;
+  setDisplayOrder: (value: string) => void;
+}) {
+  return (
+    <fieldset className="grid min-w-0 gap-4 rounded-md border border-border/70 p-3 md:col-span-2 md:grid-cols-2">
+      <legend className="px-1 text-sm font-semibold">Informações para divulgação</legend>
+      <Field label="Nome para divulgação" htmlFor={`${idPrefix}-promotion-name`} hint="Se ficar vazio, a mensagem usará o nome do produto.">
+        <Input id={`${idPrefix}-promotion-name`} maxLength={160} value={promotionName} onChange={(event) => setPromotionName(event.target.value)} />
+      </Field>
+      <Field label="Quantidade de puffs" htmlFor={`${idPrefix}-puffs`} hint="Use a quantidade aproximada do produto. Ex.: 30000 será exibido como 30K Puffs.">
+        <Input id={`${idPrefix}-puffs`} type="number" inputMode="numeric" min={0} step={1} value={puffs} onChange={(event) => setPuffs(event.target.value)} />
+      </Field>
+      <Field label="Características adicionais" htmlFor={`${idPrefix}-promotion-features`} className="md:col-span-2" hint="Uma característica por linha, até 20 linhas de 160 caracteres. Use somente texto.">
+        <TextArea id={`${idPrefix}-promotion-features`} maxLength={3200} rows={3} value={promotionFeatures} onChange={(event) => setPromotionFeatures(event.target.value)} />
+      </Field>
+      <Field label="Ordem de exibição" htmlFor={`${idPrefix}-display-order`} hint="Opcional. Números menores aparecem primeiro na mensagem.">
+        <Input id={`${idPrefix}-display-order`} type="number" inputMode="numeric" min={0} max={2147483647} step={1} value={displayOrder} onChange={(event) => setDisplayOrder(event.target.value)} />
+      </Field>
+    </fieldset>
   );
 }
 

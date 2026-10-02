@@ -33,6 +33,9 @@ export type Product = {
   model: string;
   approximate_puffs: number | null;
   cost_price: string | null;
+  promotion_name?: string | null;
+  promotion_features?: string[];
+  display_order?: number | null;
   active: boolean;
   has_history?: boolean;
 };

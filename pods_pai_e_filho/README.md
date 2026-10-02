@@ -5,7 +5,7 @@ Controle de estoque, vendas, valores a receber, lucro e repasses da sociedade en
 ## Preparar
 
 1. Crie um projeto no [Supabase](https://database.new).
-2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_pods_init.sql`, `20261001150000_product_safety.sql`, `20261001160000_variant_is_ice.sql`, `20261002100000_consultas_cost_snapshots.sql` e `20261002110000_consultas_hide_credit_filter.sql`.
+2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_pods_init.sql`, `20261001150000_product_safety.sql`, `20261001160000_variant_is_ice.sql`, `20261002100000_consultas_cost_snapshots.sql`, `20261002110000_consultas_hide_credit_filter.sql` e `20261002120000_whatsapp_promotion.sql`.
 3. Copie `.env.example` para `.env.local` e preencha:
 
 ```env
@@ -57,3 +57,27 @@ O manifesto e o service worker permitem instalar na tela inicial. As vendas cont
 ```bash
 npm run check:finance
 ```
+
+## Divulgação no WhatsApp
+
+Em instalações existentes, execute somente a nova migration `20261002120000_whatsapp_promotion.sql` no SQL Editor do Supabase antes de usar a divulgação. Ela adiciona as configurações sem alterar saldos, vendas, preços ou alertas de estoque baixo. Acesso de login ao aplicativo e chave pública do Supabase não permitem executar migrations.
+
+O ADMIN configura o cabeçalho e o rodapé em **Configurações > Divulgação**. Em **Produtos > Informações para divulgação**, cadastra o nome comercial, os puffs aproximados, uma característica por linha e, opcionalmente, a ordem de exibição. Nome vazio usa o nome interno; características não cadastradas são omitidas. A migration não atribui marcas ou características aos produtos existentes. Puffs como `30000` aparecem como `30K Puffs`.
+
+Em **Estoque > Gerar mensagem para WhatsApp**, cada clique consulta um novo snapshot do banco, independente dos filtros da tela. A prévia pode ser copiada, aberta no WhatsApp sem destinatário predefinido ou compartilhada quando o navegador oferecer compartilhamento nativo. O envio é confirmado pelo usuário no WhatsApp.
+
+A mensagem inclui apenas produtos ativos com saldo total positivo, sabores ativos com saldo positivo e o preço da regra ativa do tipo **Normal**. Sem preço Normal válido, a geração pede a correção do cadastro. Custos, repasses, lucros, quantidades e clientes nunca fazem parte do texto. Sabores Ice reutilizam a regra existente e nomes Dual Flavor são preservados como cadastrados. Produtos seguem a ordem configurada e depois o nome interno; sabores seguem ordem alfabética pelo nome exibido. Estoque negativo gera aviso administrativo separado da mensagem.
+
+```bash
+npm run check:promotion
+```
+
+Para verificar a integração depois da migration:
+
+1. Configure informações e preço Normal de dois produtos com estoque; gere e confira a prévia.
+2. Copie e compare todo o texto com a prévia, incluindo emojis, acentos, moeda e quebras de linha.
+3. Após uma venda normal, gere novamente e confira que o sabor esgotado desaparece. Se o total zerar, o bloco inteiro desaparece.
+4. Sem saldo disponível, confira a mensagem de estoque vazio e as ações de copiar/enviar desabilitadas.
+5. Confira em 320px que o modal, a prévia e as ações cabem na tela, inclusive com nomes longos.
+6. No Android/PWA, abra o WhatsApp e confira a mensagem preenchida, escolha livre de contato/grupo e confirmação manual do envio. Compartilhar deve abrir a seleção de aplicativos quando disponível.
+7. Entre como CONSULTAS e confirme que os recursos existentes permanecem acessíveis e divulgação/configurações não aparecem.

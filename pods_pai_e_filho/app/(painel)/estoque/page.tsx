@@ -10,6 +10,7 @@ import type { StockMovement } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { StockEntryForm } from "@/components/stock/stock-entry-form";
+import { WhatsAppPromotion } from "@/components/stock/whatsapp-promotion";
 import { IceBadge, StockBadge, VariantAvailabilityBadge } from "@/components/sales/badges";
 import { IceFilterSelect } from "@/components/catalog/flavor-filters";
 import { Panel } from "@/components/ui/panel";
@@ -33,6 +34,7 @@ export default async function EstoquePage({
     loadLowStockThreshold(),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
+  const isAdmin = session.status === "ok" && session.profile.role_code.toLowerCase() === "admin";
   const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
   if (!catalog.ok) {
     return (
@@ -95,6 +97,8 @@ export default async function EstoquePage({
         description={consultas ? "O saldo vem das movimentações. Toda venda reduz o estoque na hora." : "O saldo vem das movimentações. Venda, fiado ou a receber baixam na hora."}
         action={{ href: "/estoque/conferencia", label: "Conferir" }}
       />
+
+      {isAdmin ? <WhatsAppPromotion /> : null}
 
       <form className="tech-card grid w-full min-w-0 gap-2 p-3 md:p-4" method="get">
         <p className="eyebrow flex items-center gap-1.5">

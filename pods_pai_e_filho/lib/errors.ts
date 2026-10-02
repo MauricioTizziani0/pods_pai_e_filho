@@ -20,6 +20,9 @@ export function dbErrorMessage(
   if (error.message.includes("is_ice")) {
     return "Execute a migration supabase/migrations/20261001160000_variant_is_ice.sql no SQL Editor do Supabase.";
   }
+  if (/promotion_name|promotion_features|display_order|whatsapp_promotion/.test(error.message)) {
+    return "Execute a migration supabase/migrations/20261002120000_whatsapp_promotion.sql no SQL Editor do Supabase para habilitar a divulgação.";
+  }
   if (isMissingSchema(error)) {
     return "O banco ainda não foi preparado. Execute a migration do Supabase descrita no README.";
   }

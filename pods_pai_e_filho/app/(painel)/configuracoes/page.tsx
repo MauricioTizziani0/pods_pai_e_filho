@@ -5,6 +5,8 @@ import type { Profile } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SettingsPanel } from "@/components/settings/settings-panel";
+import { PromotionSettingsPanel } from "@/components/settings/promotion-settings";
+import { loadPromotionSettings } from "@/lib/data/promotion";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Configurações" };
@@ -22,9 +24,11 @@ export default async function ConfiguracoesPage() {
   if (session.status !== "ok") return <Notice>Não foi possível carregar o seu perfil.</Notice>;
   if (!session.profile.can_write) redirect("/inicio");
 
-  const [catalog, threshold] = await Promise.all([
+  const isAdmin = session.profile.role_code.toLowerCase() === "admin";
+  const [catalog, threshold, promotion] = await Promise.all([
     loadCatalog(),
     loadLowStockThreshold(),
+    isAdmin ? loadPromotionSettings() : Promise.resolve(null),
   ]);
   if (!catalog.ok) return <Notice>{catalog.message}</Notice>;
 
@@ -51,9 +55,14 @@ export default async function ConfiguracoesPage() {
       <PageHeading
         title="Configurações"
         eyebrow="Sistema"
-        description="Papéis, estoque baixo e cadastros que mudam o preço."
+        description="Papéis, estoque baixo, divulgação e cadastros que mudam o preço."
       />
       {error ? <Notice>{error.message}</Notice> : null}
+      {promotion ? (
+        <div className="mb-5 min-w-0">
+          {promotion.ok ? <PromotionSettingsPanel settings={promotion.settings} /> : <Notice>{promotion.message}</Notice>}
+        </div>
+      ) : null}
       <SettingsPanel
         profile={session.profile}
         profiles={profiles.length > 0 ? profiles : [session.profile]}

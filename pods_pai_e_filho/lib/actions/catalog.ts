@@ -23,10 +23,57 @@ export async function saveProductAction(input: {
   model: string;
   approximatePuffs: string;
   costPrice: string;
+  promotionName?: string;
+  promotionFeatures?: string;
+  displayOrder?: string;
   active: boolean;
 }): Promise<ActionResult> {
   const access = await writerClient();
   if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  const hasPromotionFields = input.promotionName !== undefined || input.promotionFeatures !== undefined || input.displayOrder !== undefined;
+  const promotionPayload: {
+    promotion_name?: string | null;
+    promotion_features?: string[];
+    display_order?: number | null;
+  } = {};
+  if (hasPromotionFields) {
+    const session = await getSessionState();
+    if (session.status !== "ok" || session.profile.role_code.toLowerCase() !== "admin") {
+      return { ok: false, message: "Somente o Administrador pode configurar as informações para divulgação." };
+    }
+    if (
+      (input.promotionName !== undefined && typeof input.promotionName !== "string") ||
+      (input.promotionFeatures !== undefined && typeof input.promotionFeatures !== "string") ||
+      (input.displayOrder !== undefined && typeof input.displayOrder !== "string")
+    ) {
+      return { ok: false, message: "Informe dados válidos para divulgação." };
+    }
+    if (/[<>]/.test(`${input.promotionName ?? ""}${input.promotionFeatures ?? ""}`)) {
+      return { ok: false, message: "Use apenas texto nas informações para divulgação, sem HTML." };
+    }
+    if (input.promotionName !== undefined) {
+      const promotionName = input.promotionName.trim();
+      if (promotionName.length > 160 || /[\r\n]/.test(promotionName)) {
+        return { ok: false, message: "O nome para divulgação deve ter até 160 caracteres em uma única linha." };
+      }
+      promotionPayload.promotion_name = promotionName || null;
+    }
+    if (input.promotionFeatures !== undefined) {
+      const features = input.promotionFeatures.split(/\r\n|\r|\n/).map((feature) => feature.trim()).filter(Boolean);
+      if (input.promotionFeatures.length > 3200 || features.length > 20 || features.some((feature) => feature.length > 160)) {
+        return { ok: false, message: "Cadastre até 20 características, com até 160 caracteres por linha." };
+      }
+      promotionPayload.promotion_features = features;
+    }
+    if (input.displayOrder !== undefined) {
+      const order = input.displayOrder.trim();
+      const displayOrder = order ? Number(order) : null;
+      if (order && (!/^\d+$/.test(order) || !Number.isSafeInteger(displayOrder) || Number(displayOrder) > 2147483647)) {
+        return { ok: false, message: "A ordem de exibição deve ser um número inteiro maior ou igual a zero." };
+      }
+      promotionPayload.display_order = displayOrder;
+    }
+  }
   const name = input.name.trim();
   if (!name) return { ok: false, message: "Informe o nome do produto." };
 
@@ -47,6 +94,7 @@ export async function saveProductAction(input: {
     approximate_puffs: puffs,
     cost_price: costPrice,
     active: input.active,
+    ...promotionPayload,
   };
 
   if (input.id) {

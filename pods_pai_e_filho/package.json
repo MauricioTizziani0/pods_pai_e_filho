@@ -7,7 +7,8 @@
     "lint": "eslint .",
     "check:finance": "node --experimental-strip-types scripts/check-finance.ts",
     "check:flavors": "node --experimental-strip-types scripts/check-flavors.ts",
-    "check:stock": "node --experimental-strip-types scripts/check-stock.ts"
+    "check:stock": "node --experimental-strip-types scripts/check-stock.ts",
+    "check:promotion": "node --experimental-strip-types scripts/check-promotion.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
