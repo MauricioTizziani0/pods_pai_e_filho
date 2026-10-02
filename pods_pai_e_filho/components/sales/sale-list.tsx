@@ -5,7 +5,7 @@ import type { SaleOverview } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreditBadge, PaymentBadge, TransferBadge } from "@/components/sales/badges";
 
-export function SaleList({ sales }: { sales: SaleOverview[] }) {
+export function SaleList({ sales, consultas = false }: { sales: SaleOverview[]; consultas?: boolean }) {
   if (sales.length === 0) {
     return (
       <EmptyState
@@ -27,8 +27,9 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                 <th>Cliente</th>
                 <th>Produto</th>
                 <th className="text-right">Qtd</th>
-                <th className="text-right">Total</th>
-                <th className="text-right">Lucro</th>
+                <th className="text-right">{consultas ? "Venda" : "Total"}</th>
+                <th className="text-right">{consultas ? "Meu repasse" : "Lucro"}</th>
+                {consultas ? <th className="text-right">Meu lucro</th> : null}
                 <th>Situação</th>
                 <th className="w-10" />
               </tr>
@@ -48,7 +49,8 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                   </td>
                   <td className="text-right tabular-nums">{sale.quantity}</td>
                   <td className="text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</td>
-                  <td className="text-right tabular-nums text-success">{formatBRL(sale.profit_amount)}</td>
+                  <td className={consultas ? "text-right tabular-nums" : "text-right tabular-nums text-success"}>{consultas ? formatBRL(sale.transfer_amount) : formatBRL(sale.profit_amount)}</td>
+                  {consultas ? <td className="text-right tabular-nums text-success">{sale.cost_history_missing ? "Custo histórico não informado" : formatBRL(sale.father_profit_amount)}</td> : null}
                   <td>
                     <div className="flex flex-wrap gap-1">
                       <PaymentBadge
@@ -62,6 +64,7 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                         dueNow={sale.transfer_due_now}
                         future={sale.transfer_is_future}
                         cancelled={!sale.is_valid}
+                        consultas={consultas}
                       />
                     </div>
                   </td>
@@ -116,6 +119,7 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                 dueNow={sale.transfer_due_now}
                 future={sale.transfer_is_future}
                 cancelled={!sale.is_valid}
+                consultas={consultas}
               />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/70 pt-3 text-xs">
@@ -123,10 +127,17 @@ export function SaleList({ sales }: { sales: SaleOverview[] }) {
                 <span className="block text-muted-foreground">Qtd</span>
                 <span className="font-medium tabular-nums">{sale.quantity} un</span>
               </span>
-              <span className="min-w-0">
-                <span className="block text-muted-foreground">Lucro</span>
-                <span className="break-words font-medium tabular-nums text-success">{formatBRL(sale.profit_amount)}</span>
-              </span>
+              {consultas ? (
+                <>
+                  <span className="min-w-0"><span className="block text-muted-foreground">Custo</span><span className="break-words font-medium tabular-nums">{sale.cost_history_missing ? "Custo histórico não informado" : formatBRL(sale.cost_amount)}</span></span>
+                  <span className="min-w-0"><span className="block text-muted-foreground">Meu lucro</span><span className="break-words font-medium tabular-nums text-success">{sale.cost_history_missing ? "Custo histórico não informado" : formatBRL(sale.father_profit_amount)}</span></span>
+                </>
+              ) : (
+                <span className="min-w-0">
+                  <span className="block text-muted-foreground">Lucro</span>
+                  <span className="break-words font-medium tabular-nums text-success">{formatBRL(sale.profit_amount)}</span>
+                </span>
+              )}
               <span className="min-w-0">
                 <span className="block text-muted-foreground">Repasse</span>
                 <span className="break-words font-medium tabular-nums">{formatBRL(sale.transfer_amount)}</span>

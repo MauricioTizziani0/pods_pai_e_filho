@@ -32,6 +32,7 @@ export type Product = {
   brand: string;
   model: string;
   approximate_puffs: number | null;
+  cost_price: string | null;
   active: boolean;
   has_history?: boolean;
 };
@@ -133,6 +134,9 @@ export type SaleOverview = {
   unit_price: string | null;
   unit_transfer: string | null;
   unit_profit: string | null;
+  cost_amount?: string | null;
+  father_profit_amount?: string | null;
+  cost_history_missing?: boolean;
 };
 
 export type SaleItem = {
@@ -146,6 +150,10 @@ export type SaleItem = {
   unit_price: string;
   unit_transfer: string;
   unit_profit: string;
+  cost_price_unit: string | null;
+  unit_father_profit: string | null;
+  line_cost: string | null;
+  line_father_profit: string | null;
   line_total: string;
   line_transfer: string;
   line_profit: string;
@@ -187,6 +195,26 @@ export type SalesReport = {
   by_customer_type: ReportRow[];
   by_status: ReportRow[];
   by_product: ReportRow[];
+};
+
+export type ConsultasFinancialSummary = {
+  sales_count: number;
+  units_sold: number;
+  due_now_sales: number;
+  future_sales: number;
+  revenue: string;
+  cost_sold: string;
+  cost_missing_items: number;
+  transfer_total: string;
+  transfer_received: string;
+  transfer_due_now: string;
+  transfer_future: string;
+  father_profit_total: string;
+  father_profit_received: string;
+  father_profit_missing_items: number;
+  father_profit_missing_received_items: number;
+  stock_cost_total: string;
+  stock_cost_missing_products: number;
 };
 
 export type StockDivergence = {

@@ -12,7 +12,7 @@ import {
   normalizeFlavorName,
   type IceFilter,
 } from "@/lib/domain/flavors";
-import { formatBRL, moneyToInput } from "@/lib/format";
+import { formatBRL, moneyToInput, parseMoney } from "@/lib/format";
 import type { CatalogSnapshot, Product, ProductVariant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ export function ProductManager({
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [puffs, setPuffs] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [iceFilter, setIceFilter] = useState<IceFilter>("all");
   const [flavorQuery, setFlavorQuery] = useState("");
@@ -86,6 +87,7 @@ export function ProductManager({
                   brand,
                   model,
                   approximatePuffs: puffs,
+                  costPrice,
                   active: true,
                 });
                 if (!result.ok) {
@@ -97,6 +99,7 @@ export function ProductManager({
                 setBrand("");
                 setModel("");
                 setPuffs("");
+                setCostPrice("");
                 router.refresh();
               });
             }}
@@ -112,6 +115,9 @@ export function ProductManager({
             </Field>
             <Field label="Puffs aproximados">
               <Input className="h-12" inputMode="numeric" value={puffs} onChange={(event) => setPuffs(event.target.value)} />
+            </Field>
+            <Field label="Preço de custo" hint="Obrigatório antes de registrar uma venda deste produto.">
+              <Input className="h-12" inputMode="decimal" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} placeholder="0,00" />
             </Field>
             <Button type="submit" size="lg" className="md:col-span-2" disabled={pending}>
               <Plus />
@@ -198,6 +204,7 @@ function ProductCard({
   const [brand, setBrand] = useState(product.brand);
   const [model, setModel] = useState(product.model);
   const [puffs, setPuffs] = useState(product.approximate_puffs?.toString() ?? "");
+  const [costPrice, setCostPrice] = useState(product.cost_price == null ? "" : moneyToInput(product.cost_price));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const variants = catalog.variants.filter(
     (variant) =>
@@ -217,7 +224,13 @@ function ProductCard({
       accent={product.active}
       className={cn(!product.active && "opacity-70")}
       action={
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-3">
+          <p className="text-right">
+            <span className="block font-display text-base font-semibold leading-none tabular-nums">
+              {product.cost_price == null ? "Não configurado" : formatBRL(product.cost_price)}
+            </span>
+            <span className="eyebrow text-[10px]">preço de custo</span>
+          </p>
           {!product.active ? <Badge variant="neutral">inativo</Badge> : null}
           <p className="text-right">
             <span className="block font-display text-2xl font-bold leading-none tabular-nums">{total}</span>
@@ -228,11 +241,12 @@ function ProductCard({
     >
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {editing ? (
-          <form className="grid gap-3 md:grid-cols-2 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); onSave(() => saveProductAction({ id: product.id, name, brand, model, approximatePuffs: puffs, active: product.active }), "Produto atualizado."); setEditing(false); }}>
+          <form className="grid gap-3 md:grid-cols-2 lg:col-span-2" onSubmit={(e) => { e.preventDefault(); onSave(() => saveProductAction({ id: product.id, name, brand, model, approximatePuffs: puffs, costPrice, active: product.active }), "Produto atualizado."); setEditing(false); }}>
             <Field label="Nome"><Input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
             <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(e.target.value)} /></Field>
             <Field label="Modelo"><Input value={model} onChange={(e) => setModel(e.target.value)} /></Field>
             <Field label="Puffs aproximados"><Input inputMode="numeric" value={puffs} onChange={(e) => setPuffs(e.target.value)} /></Field>
+            <Field label="Preço de custo" hint="Obrigatório antes de registrar uma venda."><Input inputMode="decimal" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} placeholder="0,00" /></Field>
             <div className="flex gap-2"><Button type="submit" disabled={pending}>Salvar alterações</Button><Button type="button" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button></div>
           </form>
         ) : null}
@@ -299,7 +313,7 @@ function ProductCard({
         </div>
 
         {/* Preços */}
-        <div>
+        {canWrite ? <div>
           <p className="eyebrow mb-2 flex items-center gap-1.5">
             <Tag className="h-3 w-3" /> Preços por tipo de cliente
           </p>
@@ -317,6 +331,7 @@ function ProductCard({
                   salePrice={rule ? moneyToInput(rule.sale_price) : ""}
                   transfer={rule ? moneyToInput(rule.father_transfer) : ""}
                   profit={rule ? formatBRL(rule.unit_profit) : "—"}
+                  cost={product.cost_price}
                   canWrite={canWrite}
                   pending={pending}
                   onSave={onSave}
@@ -324,7 +339,7 @@ function ProductCard({
               );
             })}
           </div>
-        </div>
+        </div> : null}
       </div>
 
       {canWrite ? (
@@ -344,6 +359,7 @@ function ProductCard({
                     brand: product.brand,
                     model: product.model,
                     approximatePuffs: product.approximate_puffs?.toString() ?? "",
+                    costPrice: product.cost_price == null ? "" : moneyToInput(product.cost_price),
                     active: !product.active,
                   }),
                 product.active ? "Produto inativado." : "Produto reativado.",
@@ -527,6 +543,7 @@ function PriceRow({
   salePrice,
   transfer,
   profit,
+  cost,
   canWrite,
   pending,
   onSave,
@@ -537,12 +554,15 @@ function PriceRow({
   salePrice: string;
   transfer: string;
   profit: string;
+  cost: string | null;
   canWrite: boolean;
   pending: boolean;
   onSave: (action: () => Promise<{ ok: boolean; message?: string }>, success: string) => void;
 }) {
   const [sale, setSale] = useState(salePrice);
   const [father, setFather] = useState(transfer);
+  const transferValue = parseMoney(father);
+  const fatherProfit = cost == null || transferValue == null ? null : transferValue - Number(cost);
 
   return (
     <form
@@ -563,8 +583,9 @@ function PriceRow({
     >
       <div className="self-center">
         <p className="font-medium">{typeName}</p>
-        <p className="text-xs text-muted-foreground">
-          Lucro <span className="font-medium text-success">{profit}</span>
+        <p className="grid text-xs text-muted-foreground">
+          <span>Lucro do pai <span className="font-medium text-primary">{cost == null ? "custo pendente" : fatherProfit == null ? "—" : formatBRL(fatherProfit)}</span></span>
+          <span>Lucro do filho <span className="font-medium text-success">{profit}</span></span>
         </p>
       </div>
       <label className="grid gap-1">

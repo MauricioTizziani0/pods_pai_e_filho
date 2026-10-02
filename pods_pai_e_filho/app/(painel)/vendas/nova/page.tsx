@@ -3,12 +3,14 @@ import { loadCatalog } from "@/lib/data/catalog";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SaleForm } from "@/components/sales/sale-form";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Nova venda" };
 
 export default async function NovaVendaPage() {
   const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
   const canWrite = session.status === "ok" && session.profile.can_write;
+  if (!canWrite) redirect("/vendas");
 
   return (
     <div className="w-full min-w-0">

@@ -35,6 +35,7 @@ export default async function VendasPage({
     getSessionState(),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
+  const consultas = session.status === "ok" && !session.profile.can_write;
   const field = cn(controlClass, "h-11");
 
   return (
@@ -116,7 +117,7 @@ export default async function VendasPage({
         </div>
       </form>
 
-      {!sales.ok ? <Notice>{sales.message}</Notice> : <SaleList sales={sales.sales} />}
+      {!sales.ok ? <Notice>{sales.message}</Notice> : <SaleList sales={sales.sales} consultas={consultas} />}
     </div>
   );
 }

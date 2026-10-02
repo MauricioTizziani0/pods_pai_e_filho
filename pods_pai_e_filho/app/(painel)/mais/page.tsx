@@ -43,6 +43,15 @@ export const metadata = { title: "Mais" };
 export default async function MaisPage() {
   const session = await getSessionState();
   const profile = session.status === "ok" ? session.profile : null;
+  const visibleGroups = profile?.can_write ? groups : [
+    {
+      label: "Consulta",
+      links: [
+        { href: "/produtos", label: "Produtos", hint: "Catálogo, sabores e estoque", icon: Boxes },
+        { href: "/relatorios", label: "Relatórios", hint: "Vendas, custos e meu lucro", icon: BarChart3 },
+      ],
+    },
+  ];
 
   return (
     <div className="grid w-full min-w-0 gap-5">
@@ -62,7 +71,7 @@ export default async function MaisPage() {
         </div>
       </section>
 
-      {groups.map((group) => (
+      {visibleGroups.map((group) => (
         <section key={group.label} className="grid gap-2">
           <p className="eyebrow px-1">{group.label}</p>
           <div className="stagger grid gap-2">

@@ -183,14 +183,14 @@ export default async function EstoquePage({
         description="Últimas 12 entradas, saídas e ajustes"
         icon={History}
         bodyClassName="p-0"
-        action={
+        action={canWrite ? (
           <Link
             href="/estoque/conferencia"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
             <ClipboardCheck className="h-3.5 w-3.5" /> Conferência
           </Link>
-        }
+        ) : undefined}
       >
         {(movements ?? []).length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">Nenhuma movimentação registrada.</p>

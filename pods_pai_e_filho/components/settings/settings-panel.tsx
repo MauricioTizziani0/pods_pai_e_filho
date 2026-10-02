@@ -131,7 +131,7 @@ export function SettingsPanel({
                   }
                 >
                   <option value="admin">Administrador</option>
-                  <option value="viewer">Consulta</option>
+                  <option value="CONSULTAS">CONSULTAS</option>
                 </Select>
               ) : (
                 <Badge variant="neutral" className="w-fit">{person.role_name}</Badge>

@@ -4,10 +4,14 @@ import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SaleList } from "@/components/sales/sale-list";
 import { StatCard } from "@/components/ui/stat-card";
+import { getSessionState } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Fiados" };
 
 export default async function FiadosPage() {
+  const session = await getSessionState();
+  if (session.status === "ok" && !session.profile.can_write) redirect("/repasses");
   const sales = await listSales({ openCredit: true });
   const totals = sales.ok
     ? sales.sales.reduce(

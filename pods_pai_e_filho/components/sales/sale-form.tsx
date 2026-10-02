@@ -53,13 +53,15 @@ export function SaleForm({
   const price = catalog.prices.find(
     (rule) => rule.product_id === productId && rule.customer_type_id === typeId,
   );
+  const product = catalog.products.find((item) => item.id === productId);
   const available = catalog.stock.find((item) => item.variant_id === variantId)?.quantity ?? 0;
   const isCredit = !received && fiado;
 
   const preview = useMemo(() => {
-    if (!price || quantity <= 0) return null;
+    if (!price || product?.cost_price == null || quantity <= 0) return null;
     try {
       return previewSale({
+        unitCost: Number(product.cost_price),
         unitPrice: Number(price.sale_price),
         unitTransfer: Number(price.father_transfer),
         quantity,
@@ -69,7 +71,7 @@ export function SaleForm({
     } catch {
       return null;
     }
-  }, [price, quantity, received, fiado]);
+  }, [price, product?.cost_price, quantity, received, fiado]);
 
   function changeProduct(nextId: string) {
     setProductId(nextId);
@@ -263,7 +265,7 @@ export function SaleForm({
       </div>
 
       <div className="grid gap-4 lg:sticky lg:top-6">
-        <Summary preview={preview} missingPrice={!price} available={available} quantity={quantity} />
+        <Summary preview={preview} missingPrice={!price} missingCost={product?.cost_price == null} available={available} quantity={quantity} />
         {quantity > available ? (
           <Notice>Estoque insuficiente. Disponível: {available}.</Notice>
         ) : null}
@@ -285,21 +287,28 @@ export function SaleForm({
 function Summary({
   preview,
   missingPrice,
+  missingCost,
   available,
   quantity,
 }: {
   preview: SalePreview | null;
   missingPrice: boolean;
+  missingCost: boolean;
   available: number;
   quantity: number;
 }) {
   if (missingPrice) {
     return <Notice tone="info">Não há preço configurado para este produto e tipo de cliente.</Notice>;
   }
+  if (missingCost) {
+    return <Notice tone="info">Preço de custo não configurado. Um administrador precisa informar o custo deste produto antes da venda.</Notice>;
+  }
   if (!preview) return null;
   const rows: Array<[string, string, string?]> = [
+    ["Preço de custo unitário", formatBRL(preview.unitCost)],
     ["Preço unitário", formatBRL(preview.unitPrice)],
     ["Repasse unitário ao pai", formatBRL(preview.unitTransfer)],
+    ["Lucro unitário do pai", formatBRL(preview.unitFatherProfit), "text-primary"],
     ["Lucro unitário", formatBRL(preview.unitProfit), "text-success"],
   ];
   return (
@@ -321,9 +330,17 @@ function Summary({
           <p className="eyebrow text-[10px]">Parte do pai</p>
           <p className="mt-1 break-words font-display text-lg font-bold tabular-nums text-primary">{formatBRL(preview.transfer)}</p>
         </div>
+        <div className="min-w-0 rounded-md border border-primary/30 bg-primary/10 px-3 py-2">
+          <p className="eyebrow text-[10px]">Lucro do pai</p>
+          <p className="mt-1 break-words font-display text-lg font-bold tabular-nums text-primary">{formatBRL(preview.fatherProfit)}</p>
+        </div>
         <div className="min-w-0 rounded-md border border-success/30 bg-success/10 px-3 py-2">
           <p className="eyebrow text-[10px]">Lucro</p>
           <p className="mt-1 break-words font-display text-lg font-bold tabular-nums text-success">{formatBRL(preview.profit)}</p>
+        </div>
+        <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2">
+          <p className="eyebrow text-[10px]">Lucro total da operação</p>
+          <p className="mt-1 break-words font-display text-lg font-bold tabular-nums">{formatBRL(preview.totalProfit)}</p>
         </div>
       </div>
       <div className="grid gap-1.5 border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">

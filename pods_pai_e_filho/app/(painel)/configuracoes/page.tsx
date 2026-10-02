@@ -5,6 +5,7 @@ import type { Profile } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SettingsPanel } from "@/components/settings/settings-panel";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Configurações" };
 
@@ -17,12 +18,14 @@ type ProfileRow = {
 };
 
 export default async function ConfiguracoesPage() {
-  const [session, catalog, threshold] = await Promise.all([
-    getSessionState(),
+  const session = await getSessionState();
+  if (session.status !== "ok") return <Notice>Não foi possível carregar o seu perfil.</Notice>;
+  if (!session.profile.can_write) redirect("/inicio");
+
+  const [catalog, threshold] = await Promise.all([
     loadCatalog(),
     loadLowStockThreshold(),
   ]);
-  if (session.status !== "ok") return <Notice>Não foi possível carregar o seu perfil.</Notice>;
   if (!catalog.ok) return <Notice>{catalog.message}</Notice>;
 
   const supabase = await createClient();

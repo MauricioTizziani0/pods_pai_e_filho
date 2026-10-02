@@ -22,6 +22,7 @@ export async function saveProductAction(input: {
   brand: string;
   model: string;
   approximatePuffs: string;
+  costPrice: string;
   active: boolean;
 }): Promise<ActionResult> {
   const access = await writerClient();
@@ -34,11 +35,17 @@ export async function saveProductAction(input: {
     return { ok: false, message: "Quantidade de puffs inválida." };
   }
 
+  const costPrice = input.costPrice.trim() ? parseMoney(input.costPrice) : null;
+  if (input.costPrice.trim() && (costPrice == null || costPrice < 0)) {
+    return { ok: false, message: "Informe um preço de custo válido, maior ou igual a zero." };
+  }
+
   const payload = {
     name,
     brand: input.brand.trim(),
     model: input.model.trim(),
     approximate_puffs: puffs,
+    cost_price: costPrice,
     active: input.active,
   };
 
@@ -115,6 +122,15 @@ export async function savePriceAction(input: {
   const fatherTransfer = parseMoney(input.fatherTransfer);
   if (salePrice == null || fatherTransfer == null) {
     return { ok: false, message: "Informe preço e repasse válidos." };
+  }
+  const { data: product, error: productError } = await access.supabase
+    .from("products")
+    .select("cost_price")
+    .eq("id", input.productId)
+    .maybeSingle();
+  if (productError) return { ok: false, message: dbErrorMessage(productError) };
+  if (product?.cost_price != null && fatherTransfer < Number(product.cost_price)) {
+    return { ok: false, message: "O repasse não pode ser menor que o preço de custo." };
   }
   if (salePrice < fatherTransfer) {
     return { ok: false, message: "O preço de venda não pode ser menor que o repasse ao pai." };
@@ -204,10 +220,11 @@ export async function saveCustomerTypeAction(name: string): Promise<ActionResult
 export async function setUserRoleAction(userId: string, roleCode: string): Promise<ActionResult> {
   const access = await writerClient();
   if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
-  if (roleCode !== "admin" && roleCode !== "viewer") {
+  if (roleCode !== "admin" && roleCode !== "CONSULTAS" && roleCode !== "viewer") {
     return { ok: false, message: "Papel inválido." };
   }
-  const { error } = await access.supabase.from("profiles").update({ role_code: roleCode }).eq("id", userId);
+  const normalizedRole = roleCode === "viewer" ? "CONSULTAS" : roleCode;
+  const { error } = await access.supabase.from("profiles").update({ role_code: normalizedRole }).eq("id", userId);
   if (error) return { ok: false, message: dbErrorMessage(error) };
   revalidateCommerce();
   return { ok: true, id: userId };

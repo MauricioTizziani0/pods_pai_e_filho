@@ -26,16 +26,18 @@ export function TransferBadge({
   dueNow,
   future,
   cancelled,
+  consultas = false,
 }: {
   paid: boolean;
   dueNow: boolean;
   future: boolean;
   cancelled?: boolean;
+  consultas?: boolean;
 }) {
   if (cancelled) return <Badge variant="neutral">Sem efeito</Badge>;
-  if (paid) return <Badge variant="success">Repassado</Badge>;
-  if (dueNow) return <Badge variant="danger" dot>A enviar agora</Badge>;
-  if (future) return <Badge variant="info">Repasse futuro</Badge>;
+  if (paid) return <Badge variant="success">{consultas ? "Recebido" : "Repassado"}</Badge>;
+  if (dueNow) return <Badge variant="danger" dot>{consultas ? "A receber agora" : "A enviar agora"}</Badge>;
+  if (future) return <Badge variant="info">{consultas ? "A receber futuramente" : "Repasse futuro"}</Badge>;
   return <Badge variant="neutral">Repasse</Badge>;
 }
 

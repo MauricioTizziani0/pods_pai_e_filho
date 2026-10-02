@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchema } from "@/lib/errors";
-import type { Metrics, Product, SaleOverview, StockBalance, StockDivergence } from "@/lib/types";
+import type { ConsultasFinancialSummary, Metrics, Product, SaleOverview, StockBalance, StockDivergence } from "@/lib/types";
 
 const emptyMetrics = (): Metrics => ({
   money_received: "0",
@@ -70,4 +70,38 @@ export async function loadDashboard(from: string | null, to: string | null) {
     ),
     lowStockThreshold: Number.isFinite(thresholdValue) ? thresholdValue : 5,
   };
+}
+
+export async function loadConsultasFinancialSummary(
+  from: string | null,
+  to: string | null,
+  filters: {
+    productId?: string | null;
+    customerId?: string | null;
+    customerName?: string | null;
+    customerTypeId?: string | null;
+    paymentStatusId?: string | null;
+    credit?: boolean | null;
+    ice?: boolean | null;
+    flavor?: string | null;
+  } = {},
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("consultas_financial_summary", {
+    p_from: from,
+    p_to: to,
+    p_product_id: filters.productId ?? null,
+    p_customer_id: filters.customerId ?? null,
+    p_customer_name: filters.customerName ?? null,
+    p_customer_type_id: filters.customerTypeId ?? null,
+    p_payment_status_id: filters.paymentStatusId ?? null,
+    p_is_credit: filters.credit ?? null,
+    p_is_ice: filters.ice ?? null,
+    p_flavor: filters.flavor ?? null,
+  });
+
+  if (error) return { ok: false as const, message: error.message };
+  const row = (Array.isArray(data) ? data[0] : data) as ConsultasFinancialSummary | null;
+  if (!row) return { ok: false as const, message: "Não foi possível carregar o resumo financeiro." };
+  return { ok: true as const, summary: row };
 }

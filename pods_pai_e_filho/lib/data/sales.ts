@@ -20,6 +20,18 @@ export type SaleQuery = {
   limit?: number;
 };
 
+type CostLine = { cost_price_unit: string | null; line_cost: string | null; line_father_profit: string | null };
+
+function withCostFigures(sale: SaleOverview, items: CostLine[]): SaleOverview {
+  const missing = items.length === 0 || items.some((item) => item.cost_price_unit == null);
+  return {
+    ...sale,
+    cost_history_missing: missing,
+    cost_amount: missing ? null : String(items.reduce((sum, item) => sum + Number(item.line_cost), 0)),
+    father_profit_amount: missing ? null : String(items.reduce((sum, item) => sum + Number(item.line_father_profit), 0)),
+  };
+}
+
 export async function listSales(query: SaleQuery = {}) {
   const supabase = await createClient();
   let request = supabase
@@ -58,7 +70,26 @@ export async function listSales(query: SaleQuery = {}) {
 
   const { data, error } = await request;
   if (error) return { ok: false as const, message: error.message, sales: [] as SaleOverview[] };
-  return { ok: true as const, message: "", sales: (data ?? []) as SaleOverview[] };
+  const sales = (data ?? []) as SaleOverview[];
+  if (sales.length === 0) return { ok: true as const, message: "", sales };
+
+  const { data: itemRows, error: itemError } = await supabase
+    .from("sale_items")
+    .select("sale_id, cost_price_unit, line_cost, line_father_profit")
+    .in("sale_id", sales.map((sale) => sale.id));
+  if (itemError) return { ok: false as const, message: itemError.message, sales: [] as SaleOverview[] };
+
+  const itemsBySale = new Map<string, CostLine[]>();
+  for (const row of itemRows ?? []) {
+    const group = itemsBySale.get(row.sale_id) ?? [];
+    group.push(row);
+    itemsBySale.set(row.sale_id, group);
+  }
+  return {
+    ok: true as const,
+    message: "",
+    sales: sales.map((sale) => withCostFigures(sale, itemsBySale.get(sale.id) ?? [])),
+  };
 }
 
 export async function getSale(id: string) {
@@ -94,7 +125,11 @@ export async function getSale(id: string) {
 
   return {
     ok: true as const,
-    sale: sale.data as SaleOverview,
+    sale: withCostFigures(sale.data as SaleOverview, ((items.data ?? []) as SaleItem[]).map((item) => ({
+      cost_price_unit: item.cost_price_unit,
+      line_cost: item.line_cost,
+      line_father_profit: item.line_father_profit,
+    }))),
     items: (items.data ?? []) as SaleItem[],
     audit: logs,
   };

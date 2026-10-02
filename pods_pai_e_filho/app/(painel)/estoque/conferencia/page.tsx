@@ -3,12 +3,14 @@ import { loadCatalog } from "@/lib/data/catalog";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { StockCountForm } from "@/components/stock/stock-count-form";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Conferência" };
 
 export default async function ConferenciaPage() {
   const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
   const canWrite = session.status === "ok" && session.profile.can_write;
+  if (!canWrite) redirect("/estoque");
   return (
     <div className="w-full min-w-0">
       <PageHeading

@@ -93,6 +93,7 @@ assertEqual(cancelled.transferDueNow, 0, "cancelada sem repasse ativo");
 assertEqual(cancelled.profitTotal, 0, "cancelada sem lucro ativo");
 
 const preview = previewSale({
+  unitCost: 100,
   unitPrice: 150,
   unitTransfer: 125,
   quantity: 2,
@@ -100,12 +101,17 @@ const preview = previewSale({
   isCredit: true,
 });
 assertEqual(preview.unitProfit, 25, "lucro unitário");
+assertEqual(preview.unitFatherProfit, 25, "lucro unitário do pai");
 assertEqual(preview.total, 300, "total");
+assertEqual(preview.cost, 200, "custo total");
 assertEqual(preview.transfer, 250, "repasse");
 assertEqual(preview.profit, 50, "lucro");
+assertEqual(preview.fatherProfit, 50, "lucro total do pai");
+assertEqual(preview.totalProfit, 100, "lucro total da operação");
 assertEqual(preview.indicators.transferDueNow, 250, "preview fiado");
 
 const receivedPreview = previewSale({
+  unitCost: 100,
   unitPrice: 130,
   unitTransfer: 125,
   quantity: 1,
@@ -114,6 +120,20 @@ const receivedPreview = previewSale({
 });
 if (receivedPreview.isCredit) {
   throw new Error("Venda já recebida não permanece fiada na criação.");
+}
+
+for (const invalid of [
+  { unitCost: -1, unitTransfer: 125, unitPrice: 150 },
+  { unitCost: 130, unitTransfer: 125, unitPrice: 150 },
+  { unitCost: 100, unitTransfer: 125, unitPrice: 120 },
+]) {
+  let rejected = false;
+  try {
+    previewSale({ ...invalid, quantity: 1, received: true, isCredit: false });
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Preço inconsistente deveria ter sido recusado.");
 }
 
 console.log("Regras financeiras conferidas.");

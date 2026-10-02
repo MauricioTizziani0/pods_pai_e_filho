@@ -5,7 +5,7 @@
  *
  * A enviar agora = repasse não pago AND (recebido OR fiado)
  * Repasse futuro = a receber AND não fiado AND repasse não pago
- * Lucro unitário = preço − repasse. Nunca é digitado.
+ * Lucro do pai = repasse − custo; lucro do filho = venda − repasse.
  */
 
 export type SaleFigures = {
@@ -73,13 +73,18 @@ export function stockDeltaOnSale(quantity: number) {
 }
 
 export type SalePreview = {
+  unitCost: number;
   unitPrice: number;
   unitTransfer: number;
   unitProfit: number;
+  unitFatherProfit: number;
   quantity: number;
   total: number;
+  cost: number;
   transfer: number;
+  fatherProfit: number;
   profit: number;
+  totalProfit: number;
   received: boolean;
   isCredit: boolean;
   indicators: IndicatorTotals;
@@ -87,12 +92,19 @@ export type SalePreview = {
 };
 
 export function previewSale(input: {
+  unitCost: number;
   unitPrice: number;
   unitTransfer: number;
   quantity: number;
   received: boolean;
   isCredit: boolean;
 }): SalePreview {
+  if (!Number.isFinite(input.unitCost) || input.unitCost < 0) {
+    throw new Error("Preço de custo inválido.");
+  }
+  if (input.unitTransfer < input.unitCost) {
+    throw new Error("O repasse não pode ser menor que o preço de custo.");
+  }
   if (input.unitPrice < input.unitTransfer) {
     throw new Error("O preço de venda não pode ser menor que o repasse ao pai.");
   }
@@ -101,6 +113,7 @@ export function previewSale(input: {
   }
 
   const profitPerUnit = unitProfit(input.unitPrice, input.unitTransfer);
+  const fatherProfitPerUnit = roundMoney(input.unitTransfer - input.unitCost);
   const isCredit = input.received ? false : input.isCredit;
   const sale: SaleFigures = {
     total: roundMoney(input.unitPrice * input.quantity),
@@ -114,13 +127,18 @@ export function previewSale(input: {
   };
 
   return {
+    unitCost: roundMoney(input.unitCost),
     unitPrice: input.unitPrice,
     unitTransfer: input.unitTransfer,
     unitProfit: profitPerUnit,
+    unitFatherProfit: fatherProfitPerUnit,
     quantity: input.quantity,
     total: sale.total,
+    cost: roundMoney(input.unitCost * input.quantity),
     transfer: sale.transfer,
+    fatherProfit: roundMoney(fatherProfitPerUnit * input.quantity),
     profit: sale.profit,
+    totalProfit: roundMoney(input.unitPrice * input.quantity - input.unitCost * input.quantity),
     received: input.received,
     isCredit,
     indicators: summarizeSales([sale]),

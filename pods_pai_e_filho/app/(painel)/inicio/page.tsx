@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { getSessionState } from "@/lib/auth";
 import { loadDashboard } from "@/lib/data/dashboard";
+import { loadConsultasFinancialSummary } from "@/lib/data/dashboard";
+import { ConsultasDashboard } from "@/components/dashboard/consultas-dashboard";
 import { formatBRL, formatDate, resolvePeriod } from "@/lib/format";
 import { getLowStockProducts, summarizeActiveProductStock } from "@/lib/domain/stock";
 import { Notice } from "@/components/feedback/notice";
@@ -46,6 +48,19 @@ export default async function InicioPage({
         <Notice>{dashboard.message}</Notice>
       </div>
     );
+  }
+
+  if (!canWrite) {
+    const financial = await loadConsultasFinancialSummary(period.from, period.to);
+    if (!financial.ok) {
+      return (
+        <div className="grid w-full min-w-0 gap-4">
+          <PageHeading title="Início" />
+          <Notice>{financial.message}</Notice>
+        </div>
+      );
+    }
+    return <ConsultasDashboard dashboard={dashboard} summary={financial.summary} periodLabel={period.label} params={params} />;
   }
 
   const m = dashboard.metrics;

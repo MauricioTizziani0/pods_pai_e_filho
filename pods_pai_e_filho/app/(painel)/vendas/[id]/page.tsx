@@ -33,7 +33,7 @@ export default async function VendaPage({ params }: { params: Promise<{ id: stri
         back={{ href: "/vendas", label: "Voltar às vendas" }}
         description={`${formatDate(sale.sale.sale_date)} · ${sale.sale.product_name} · ${sale.sale.variant_name}`}
       />
-      <SaleEditor sale={sale.sale} catalog={catalog.data} audit={sale.audit} canWrite={canWrite} />
+      <SaleEditor sale={sale.sale} items={sale.items} catalog={catalog.data} audit={sale.audit} canWrite={canWrite} />
     </div>
   );
 }

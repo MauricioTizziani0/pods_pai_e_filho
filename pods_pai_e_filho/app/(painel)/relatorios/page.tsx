@@ -1,5 +1,7 @@
 import { Filter } from "lucide-react";
 import { loadCatalog } from "@/lib/data/catalog";
+import { getSessionState } from "@/lib/auth";
+import { loadConsultasFinancialSummary } from "@/lib/data/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { formatBRL, resolvePeriod } from "@/lib/format";
 import type { SalesReport } from "@/lib/types";
@@ -24,35 +26,52 @@ export default async function RelatoriosPage({
     de: params.de,
     ate: params.ate,
   });
-  const catalog = await loadCatalog();
-  const supabase = await createClient();
+  const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
+  const consultas = session.status === "ok" && !session.profile.can_write;
   const credit = params.fiado === "sim" ? true : params.fiado === "nao" ? false : null;
   const ice = iceFilterToBool(parseIceParam(params.ice));
-  const { data, error } = await supabase.rpc("sales_report", {
-    p_from: period.from,
-    p_to: period.to,
-    p_product_id: params.produto || null,
-    p_customer_id: null,
-    p_customer_name: params.cliente || null,
-    p_customer_type_id: params.tipo || null,
-    p_payment_status_id: params.status || null,
-    p_is_credit: credit,
-    p_is_ice: ice,
-    p_flavor: params.sabor || null,
-  });
-
-  const report = (data ?? {
+  let reportError: string | null = null;
+  let consultasSummary: Awaited<ReturnType<typeof loadConsultasFinancialSummary>> | null = null;
+  let report: SalesReport = {
     by_customer_type: [],
     by_status: [],
     by_product: [],
-  }) as SalesReport;
+  };
+  if (consultas) {
+    consultasSummary = await loadConsultasFinancialSummary(period.from, period.to, {
+      productId: params.produto,
+      customerName: params.cliente,
+      customerTypeId: params.tipo,
+      paymentStatusId: params.status,
+      credit,
+      ice,
+      flavor: params.sabor,
+    });
+    if (!consultasSummary.ok) reportError = consultasSummary.message;
+  } else {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("sales_report", {
+      p_from: period.from,
+      p_to: period.to,
+      p_product_id: params.produto || null,
+      p_customer_id: null,
+      p_customer_name: params.cliente || null,
+      p_customer_type_id: params.tipo || null,
+      p_payment_status_id: params.status || null,
+      p_is_credit: credit,
+      p_is_ice: ice,
+      p_flavor: params.sabor || null,
+    });
+    if (error) reportError = error.message;
+    report = (data ?? report) as SalesReport;
+  }
   const field = cn(controlClass, "h-11");
 
   return (
     <div className="grid w-full min-w-0 gap-6">
       <PageHeading title="Relatórios" eyebrow="Análise" description={period.label} />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : null}
-      {error ? <Notice>{error.message}</Notice> : null}
+      {reportError ? <Notice>{reportError}</Notice> : null}
 
       <form className="tech-card grid gap-2 p-3 md:p-4" method="get">
         <p className="eyebrow flex items-center gap-1.5">
@@ -119,7 +138,11 @@ export default async function RelatoriosPage({
         </div>
       </form>
 
-      {!error ? (
+      {!reportError && consultas && consultasSummary?.ok ? (
+        <ConsultasReport summary={consultasSummary.summary} />
+      ) : null}
+
+      {!reportError && !consultas ? (
         <div className="stagger grid gap-4">
           <ReportTable title="Por tipo de cliente" rows={report.by_customer_type} />
           <ReportTable title="Por status" rows={report.by_status} />
@@ -261,6 +284,30 @@ function ReportTable({
           ) : null}
         </table>
       </div>
+    </section>
+  );
+}
+
+function ConsultasReport({ summary }: { summary: NonNullable<Extract<Awaited<ReturnType<typeof loadConsultasFinancialSummary>>, { ok: true }>["summary"]> }) {
+  const metrics: Array<{ label: string; value: string; hint?: string; incomplete?: boolean }> = [
+    { label: "Quantidade vendida", value: `${summary.units_sold} un`, hint: `${summary.sales_count} venda(s)` },
+    { label: "Faturamento", value: formatBRL(summary.revenue) },
+    { label: "Custo dos produtos vendidos", value: summary.cost_missing_items ? "Dados incompletos" : formatBRL(summary.cost_sold), hint: summary.cost_missing_items ? `${formatBRL(summary.cost_sold)} em custos informados · ${summary.cost_missing_items} item(ns) sem custo histórico.` : "Todos os custos do período estão informados.", incomplete: summary.cost_missing_items > 0 },
+    { label: "Repasse", value: formatBRL(summary.transfer_total) },
+    { label: "Lucro do pai", value: summary.father_profit_missing_items ? "Dados incompletos" : formatBRL(summary.father_profit_total), hint: summary.father_profit_missing_items ? `${formatBRL(summary.father_profit_total)} apurados · ${summary.father_profit_missing_items} item(ns) sem custo histórico.` : "Lucro referente aos itens vendidos.", incomplete: summary.father_profit_missing_items > 0 },
+    { label: "Repasse já recebido", value: formatBRL(summary.transfer_received) },
+    { label: "Repasse pendente agora", value: formatBRL(summary.transfer_due_now) },
+    { label: "Repasse futuro", value: formatBRL(summary.transfer_future) },
+  ];
+  return (
+    <section className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Relatório financeiro do pai">
+      {metrics.map((metric) => (
+        <article key={metric.label} className="tech-card min-w-0 p-4">
+          <p className="eyebrow break-words">{metric.label}</p>
+          <p className={cn("mt-3 break-words font-display text-xl font-bold tabular-nums sm:text-2xl", metric.incomplete && "text-warning")}>{metric.value}</p>
+          {metric.hint ? <p className="mt-2 break-words text-xs text-muted-foreground">{metric.hint}</p> : null}
+        </article>
+      ))}
     </section>
   );
 }

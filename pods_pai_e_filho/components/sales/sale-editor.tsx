@@ -6,7 +6,7 @@ import { AlertTriangle, CheckCircle2, History, Pencil, Send } from "lucide-react
 import { cancelSaleAction, confirmReceiptAction, updateSaleAction } from "@/lib/actions/sales";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { getFlavorDisplayName } from "@/lib/domain/flavors";
-import type { AuditLog, CatalogSnapshot, SaleOverview } from "@/lib/types";
+import type { AuditLog, CatalogSnapshot, SaleItem, SaleOverview } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,15 +27,18 @@ const auditLabels: Record<string, string> = {
 
 export function SaleEditor({
   sale,
+  items,
   catalog,
   audit,
   canWrite,
 }: {
   sale: SaleOverview;
+  items: SaleItem[];
   catalog: CatalogSnapshot;
   audit: AuditLog[];
   canWrite: boolean;
 }) {
+  const consultas = !canWrite;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -97,18 +100,54 @@ export function SaleEditor({
             dueNow={sale.transfer_due_now}
             future={sale.transfer_is_future}
             cancelled={!sale.is_valid}
+            consultas={consultas}
           />
         </div>
         <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-          <Money label="Total" value={sale.total_amount} large />
-          <Money label="Parte do pai" value={sale.transfer_amount} tone="text-primary" />
-          <Money label="Lucro" value={sale.profit_amount} tone="text-success" />
-          <Money label="Unitário" value={sale.unit_price} />
+          {consultas ? (
+            <>
+              <Money label="Valor da venda" value={sale.total_amount} large />
+              <Money label="Meu repasse" value={sale.transfer_amount} tone="text-primary" />
+              <Money label="Meu lucro" value={sale.father_profit_amount ?? null} fallback="Custo histórico não informado" tone="text-success" />
+              <Money label="Custo dos produtos" value={sale.cost_amount ?? null} fallback="Custo histórico não informado" />
+            </>
+          ) : (
+            <>
+              <Money label="Total" value={sale.total_amount} large />
+              <Money label="Parte do pai" value={sale.transfer_amount} tone="text-primary" />
+              <Money label="Lucro" value={sale.profit_amount} tone="text-success" />
+              <Money label="Unitário" value={sale.unit_price} />
+            </>
+          )}
         </dl>
         {sale.cancel_reason ? (
           <p className="mt-3 text-sm text-muted-foreground">Motivo do cancelamento: {sale.cancel_reason}</p>
         ) : null}
       </section>
+
+      {consultas ? (
+        <Panel title="Detalhes do meu repasse" description="Valores e situação de cada produto vendido" icon={Send}>
+          <ul className="grid gap-3">
+            {items.map((item) => (
+              <li key={item.id} className="grid min-w-0 gap-3 rounded-md border border-border/70 bg-surface p-3">
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                  <p className="min-w-0 break-words font-semibold">{item.product_name} · {item.variant_name}</p>
+                  <Badge variant="neutral">{item.quantity} un</Badge>
+                </div>
+                <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Money label="Custo" value={item.cost_price_unit} fallback="Custo histórico não informado" />
+                  <Money label="Venda" value={item.line_total} />
+                  <Money label="Meu repasse" value={item.line_transfer} tone="text-primary" />
+                  <Money label="Meu lucro" value={item.line_father_profit} fallback="Custo histórico não informado" tone="text-success" />
+                </dl>
+                <p className="break-words text-xs text-muted-foreground">
+                  Pagamento: {sale.payment_status_name}{sale.is_credit ? " · Fiado" : ""} · Repasse: {sale.transfer_paid ? "Recebido" : sale.transfer_due_now ? "Pendente agora" : sale.transfer_is_future ? "Futuro" : "Sem pendência"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       {canWrite && sale.is_valid ? (
         <Panel title="Editar venda" icon={Pencil}>
@@ -340,11 +379,13 @@ export function SaleEditor({
 function Money({
   label,
   value,
+  fallback,
   tone,
   large,
 }: {
   label: string;
-  value: string | null;
+  value: string | null | undefined;
+  fallback?: string;
   tone?: string;
   large?: boolean;
 }) {
@@ -358,7 +399,7 @@ function Money({
           tone,
         )}
       >
-        {formatBRL(value)}
+        {value == null ? (fallback ?? "—") : formatBRL(value)}
       </dd>
     </div>
   );

@@ -21,7 +21,7 @@ import type { Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BrandLockup, BrandMark } from "@/components/brand/logo";
 
-const sideNav = [
+const adminSideNav = [
   {
     label: "Operação",
     items: [
@@ -74,7 +74,17 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const saleHref = profile.can_write ? "/vendas/nova" : "/vendas";
+  const sideNav = profile.can_write ? adminSideNav : [
+    {
+      label: "CONSULTAS",
+      items: [
+        { href: "/inicio", label: "Início", icon: LayoutDashboard },
+        { href: "/estoque", label: "Estoque", icon: Package },
+        { href: "/vendas", label: "Vendas", icon: Receipt },
+        { href: "/repasses", label: "Financeiro", icon: Wallet },
+      ],
+    },
+  ];
 
   async function logout() {
     const supabase = createClient();
@@ -83,13 +93,20 @@ export function AppShell({
     router.refresh();
   }
 
-  const mobile = [
-    { href: "/inicio", label: "Início", icon: LayoutDashboard },
-    { href: "/estoque", label: "Estoque", icon: Package },
-    { href: saleHref, label: "Vender", icon: Plus, emphasis: true },
-    { href: "/repasses", label: "Financeiro", icon: Wallet },
-    { href: "/mais", label: "Mais", icon: Menu },
-  ];
+  const mobile = profile.can_write
+    ? [
+        { href: "/inicio", label: "Início", icon: LayoutDashboard },
+        { href: "/estoque", label: "Estoque", icon: Package },
+        { href: "/vendas/nova", label: "Vender", icon: Plus, emphasis: true },
+        { href: "/repasses", label: "Financeiro", icon: Wallet },
+        { href: "/mais", label: "Mais", icon: Menu },
+      ]
+    : [
+        { href: "/inicio", label: "Início", icon: LayoutDashboard },
+        { href: "/estoque", label: "Estoque", icon: Package },
+        { href: "/vendas", label: "Vendas", icon: Receipt },
+        { href: "/repasses", label: "Financeiro", icon: Wallet },
+      ];
 
   return (
     <div className="min-h-dvh w-full min-w-0 max-w-full">
@@ -211,7 +228,7 @@ export function AppShell({
 
       {/* ---------------- Bottom nav (mobile) ---------------- */}
       <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="mx-auto grid w-full max-w-lg grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
+        <div className={cn("mx-auto grid w-full max-w-lg px-1 pb-[env(safe-area-inset-bottom)]", profile.can_write ? "grid-cols-5" : "grid-cols-4")}>
           {mobile.map((item) => {
             const active = item.emphasis
               ? pathname.startsWith("/vendas/nova")

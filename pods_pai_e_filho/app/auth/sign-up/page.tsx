@@ -7,7 +7,7 @@ export default function Page() {
   return (
     <AuthLayout
       title="Criar conta"
-      description="A primeira conta vira administrador. As seguintes começam como consulta."
+      description="A primeira conta vira Administrador. As seguintes começam com perfil CONSULTAS."
     >
       <SignUpForm />
     </AuthLayout>
