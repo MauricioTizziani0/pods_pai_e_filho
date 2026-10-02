@@ -75,7 +75,7 @@ export function BrandHero({ className }: { className?: string }) {
   return (
     <div className={cn("relative mx-auto w-full max-w-[15rem]", className)}>
       <div aria-hidden className="absolute -inset-8 rounded-full bg-primary/20 blur-3xl" />
-      <div className="diag-cut relative overflow-hidden rounded-lg bg-white p-2 shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_0_48px_-12px_hsl(var(--primary)/0.65)]">
+      <div className="relative overflow-hidden rounded-lg bg-white p-2 shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_0_48px_-12px_hsl(var(--primary)/0.65)]">
         <img src={LOGO_SRC} alt="Pods - Pai e Filho" width={512} height={512} className="h-auto w-full object-contain" />
       </div>
     </div>
