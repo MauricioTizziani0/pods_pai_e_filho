@@ -52,6 +52,8 @@ Antes da primeira venda, lance a entrada de estoque em Estoque.
 
 O manifesto e o service worker permitem instalar na tela inicial. As vendas continuam exigindo internet; o worker só guarda ícones e a página de sem conexão.
 
+O atalho instalado usa a arte arredondada de `public/brand/mobile-icon-rounded.png`. Para gerar as versões Android e Apple, execute `node scripts/generate-icons.mjs`. A logo quadrada do sistema/login (`public/brand/logo.png`) e os favicons são preservados. Depois de publicar a alteração, atalhos que ainda exibirem o ícone antigo podem ser removidos e adicionados novamente à tela inicial.
+
 ## Conferir as regras financeiras
 
 ```bash

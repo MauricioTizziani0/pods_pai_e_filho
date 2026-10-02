@@ -1,44 +1,38 @@
 /**
- * Gera os ícones da PWA a partir da logo oficial (public/brand/logo.png).
+ * Gera apenas os ícones de instalação mobile a partir da arte arredondada.
  * Uso: node scripts/generate-icons.mjs
  *
- * - icon-192 / icon-512 / apple-touch-icon: logo centralizada em fundo branco,
- *   recortando parte da margem vazia da arte para o ícone ficar mais presente.
- * - icon-maskable-512: logo reduzida para a zona segura (círculo de 80%).
- * - app/icon.png: favicon.
+ * - mobile-icon-192 / mobile-icon-512: preservam a arte e sua transparência.
+ * - apple-touch-icon-rounded: fundo branco para o recorte feito pelo iOS.
+ * - mobile-icon-maskable-512: fundo opaco e arte na zona segura (círculo de 80%).
+ * A logo interna e os favicons quadrados não são alterados.
  */
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 
-const SOURCE = path.resolve("public/brand/logo.png");
+const SOURCE = path.resolve("public/brand/mobile-icon-rounded.png");
 const OUT = path.resolve("public/icons");
 const WHITE = { r: 255, g: 255, b: 255, alpha: 1 };
 
 if (!fs.existsSync(SOURCE)) {
-  console.error(`Logo não encontrada em ${SOURCE}`);
+  console.error(`Ícone mobile não encontrado em ${SOURCE}`);
   process.exit(1);
 }
 
 fs.mkdirSync(OUT, { recursive: true });
 
-const meta = await sharp(SOURCE).metadata();
-const side = Math.min(meta.width ?? 1024, meta.height ?? 1024);
-
-/** Recorta a margem externa da arte (aprox. 7%) para o ícone não ficar pequeno. */
+/** Mantém a arte arredondada inteira, sem recortar sua borda. */
 async function standardIcon(size) {
-  const trim = Math.round(side * 0.07);
   return sharp(SOURCE)
-    .extract({ left: trim, top: trim, width: side - trim * 2, height: side - trim * 2 })
-    .resize(size, size, { fit: "cover" })
-    .flatten({ background: WHITE })
+    .resize(size, size, { fit: "contain", background: { ...WHITE, alpha: 0 } })
     .png()
     .toBuffer();
 }
 
-/** Logo inteira ocupando ~72% do canvas branco: cabe na zona segura maskable. */
+/** O círculo da arte cabe na zona segura de 80% do ícone maskable. */
 async function maskableIcon(size) {
-  const inner = Math.round(size * 0.72);
+  const inner = Math.round(size * 0.8);
   const logo = await sharp(SOURCE)
     .resize(inner, inner, { fit: "contain", background: WHITE })
     .flatten({ background: WHITE })
@@ -52,10 +46,12 @@ async function maskableIcon(size) {
     .toBuffer();
 }
 
-fs.writeFileSync(path.join(OUT, "icon-192.png"), await standardIcon(192));
-fs.writeFileSync(path.join(OUT, "icon-512.png"), await standardIcon(512));
-fs.writeFileSync(path.join(OUT, "apple-touch-icon.png"), await standardIcon(180));
-fs.writeFileSync(path.join(OUT, "icon-maskable-512.png"), await maskableIcon(512));
-fs.writeFileSync(path.join("app", "icon.png"), await standardIcon(512));
+fs.writeFileSync(path.join(OUT, "mobile-icon-192.png"), await standardIcon(192));
+fs.writeFileSync(path.join(OUT, "mobile-icon-512.png"), await standardIcon(512));
+fs.writeFileSync(
+  path.join(OUT, "apple-touch-icon-rounded.png"),
+  await sharp(await standardIcon(180)).flatten({ background: WHITE }).png().toBuffer(),
+);
+fs.writeFileSync(path.join(OUT, "mobile-icon-maskable-512.png"), await maskableIcon(512));
 
-console.log("Ícones gerados a partir da logo oficial.");
+console.log("Ícones mobile gerados a partir da arte arredondada. Logo interna e favicons preservados.");

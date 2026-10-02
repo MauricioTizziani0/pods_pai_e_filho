@@ -1,5 +1,11 @@
-const CACHE = "pods-static-v3";
-const PRECACHE = ["/icons/icon-192.png", "/icons/icon-512.png", "/offline.html"];
+const CACHE = "pods-static-v4";
+const PRECACHE = [
+  "/icons/mobile-icon-192.png",
+  "/icons/mobile-icon-512.png",
+  "/icons/mobile-icon-maskable-512.png",
+  "/icons/apple-touch-icon-rounded.png",
+  "/offline.html",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
