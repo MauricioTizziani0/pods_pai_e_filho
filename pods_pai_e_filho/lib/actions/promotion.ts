@@ -8,7 +8,7 @@ import { buildWhatsAppPromotion, validatePromotionSettings } from "@/lib/domain/
 import type { PromotionMessageResult, PromotionSettings, PromotionSnapshot } from "@/lib/domain/promotion";
 import type { ActionResult } from "@/lib/types";
 
-const MIGRATION_MESSAGE = "Execute a migration supabase/migrations/20261002120000_whatsapp_promotion.sql no SQL Editor do Supabase para habilitar a divulgação.";
+const MIGRATION_MESSAGE = "Execute a migration supabase/migrations/20261002120000_006_whatsapp_promotion.sql no SQL Editor do Supabase para habilitar a divulgação.";
 
 async function adminClient() {
   const session = await getSessionState();

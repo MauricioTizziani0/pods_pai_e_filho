@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
@@ -14,18 +15,19 @@ import {
   Wallet,
 } from "lucide-react";
 import { getSessionState } from "@/lib/auth";
+import { listBatches } from "@/lib/data/batches";
 import { loadDashboard } from "@/lib/data/dashboard";
 import { loadConsultasFinancialSummary } from "@/lib/data/dashboard";
 import { ConsultasDashboard } from "@/components/dashboard/consultas-dashboard";
+import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { formatBRL, formatDate, resolvePeriod } from "@/lib/format";
 import { getLowStockProducts, summarizeActiveProductStock } from "@/lib/domain/stock";
+import { buildFilterUrl, formatBatchLabel, resolveBatchFilter } from "@/lib/domain/batch-filters";
 import { Notice } from "@/components/feedback/notice";
 import { PageHeading } from "@/components/shell/page-heading";
 import { PaymentBadge, CreditBadge, StockBadge } from "@/components/sales/badges";
 import { StatCard } from "@/components/ui/stat-card";
 import { Panel } from "@/components/ui/panel";
-import { controlClass } from "@/components/ui/field";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isConsultasRole } from "@/lib/domain/roles";
 
@@ -34,35 +36,69 @@ export const metadata = { title: "Dashboard" };
 export default async function InicioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string; de?: string; ate?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
+  const params: Record<string, string | undefined> = Object.fromEntries(
+    Object.entries(rawParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+  );
   const period = resolvePeriod(params);
-  const session = await getSessionState();
+  const [session, batchesResult] = await Promise.all([getSessionState(), listBatches()]);
+  if (!batchesResult.ok && params.lote && params.lote !== "todos") {
+    return (
+      <div className="grid w-full min-w-0 gap-4">
+        <PageHeading title="Dashboard" />
+        <Notice>Não foi possível carregar os lotes. {batchesResult.message}</Notice>
+      </div>
+    );
+  }
+  const batchFilter = resolveBatchFilter(batchesResult.batches, params.lote);
+  if (batchesResult.ok && batchFilter.shouldCanonicalize) {
+    redirect(buildFilterUrl("/inicio", params, { lote: batchFilter.value }));
+  }
+  const batchNotice = batchesResult.ok ? undefined : "Não foi possível carregar os lotes. Exibindo Todos os lotes.";
+  const currentUrl = buildFilterUrl("/inicio", params);
+  const salesUrl = buildFilterUrl("/vendas", params, {
+    lote: batchFilter.batchId ?? undefined,
+    periodo: undefined,
+    de: period.from ?? undefined,
+    ate: period.to ?? undefined,
+  });
+  const filters = {
+    batches: batchesResult.batches.map((batch) => ({ value: batch.batch_id, label: formatBatchLabel(batch) })),
+    batchValue: batchFilter.value,
+    params,
+    periodFrom: period.from,
+    periodTo: period.to,
+  };
   const canWrite = session.status === "ok" && session.profile.can_write;
   const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
-  const dashboard = await loadDashboard(period.from, period.to, { consultas });
+  const dashboard = await loadDashboard(period.from, period.to, { consultas, batchId: batchFilter.batchId });
 
   if (!dashboard.ok) {
     return (
       <div className="grid w-full min-w-0 gap-4">
-        <PageHeading title="Dashboard" />
+        <PageHeading title="Dashboard" description={`${batchFilter.label} · ${period.label}`} />
+        {batchNotice ? <Notice>{batchNotice}</Notice> : null}
+        <DashboardFilters key={currentUrl} {...filters} />
         <Notice>{dashboard.message}</Notice>
       </div>
     );
   }
 
   if (consultas) {
-    const financial = await loadConsultasFinancialSummary(period.from, period.to);
+    const financial = await loadConsultasFinancialSummary(period.from, period.to, { batchId: batchFilter.batchId });
     if (!financial.ok) {
       return (
         <div className="grid w-full min-w-0 gap-4">
-          <PageHeading title="Início" />
+          <PageHeading title="Início" description={`${batchFilter.label} · ${period.label}`} />
+          {batchNotice ? <Notice>{batchNotice}</Notice> : null}
+          <DashboardFilters key={currentUrl} {...filters} />
           <Notice>{financial.message}</Notice>
         </div>
       );
     }
-    return <ConsultasDashboard dashboard={dashboard} summary={financial.summary} periodLabel={period.label} params={params} />;
+    return <ConsultasDashboard dashboard={dashboard} summary={financial.summary} periodLabel={period.label} batchLabel={batchFilter.label} filters={filters} currentUrl={currentUrl} salesUrl={salesUrl} batchNotice={batchNotice} />;
   }
 
   const m = dashboard.metrics;
@@ -90,42 +126,17 @@ export default async function InicioPage({
       <PageHeading
         title="Dashboard"
         eyebrow="Painel de controle"
-        description={period.label}
+        description={`${batchFilter.label} · ${period.label}`}
         action={canWrite ? { href: "/vendas/nova", label: "Nova venda", icon: "plus" } : undefined}
       />
 
-      {/* Filtro de período */}
-      <form className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" method="get">
-        <div className="segmented w-full sm:w-auto">
-          <PeriodLink current={params.periodo} value="" label="Tudo" />
-          <PeriodLink current={params.periodo} value="mes" label="Este mês" />
-        </div>
-        <input type="hidden" name="periodo" value="personalizado" />
-        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-          <input
-            className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")}
-            type="date"
-            name="de"
-            aria-label="De"
-            defaultValue={params.de ?? period.from ?? ""}
-          />
-          <input
-            className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")}
-            type="date"
-            name="ate"
-            aria-label="Até"
-            defaultValue={params.ate ?? period.to ?? ""}
-          />
-          <button className={cn(buttonVariants({ variant: "secondary" }), "h-10 w-full sm:w-auto")} type="submit">
-            Filtrar
-          </button>
-        </div>
-      </form>
+      {batchNotice ? <Notice>{batchNotice}</Notice> : null}
+      <DashboardFilters key={currentUrl} {...filters} />
 
       {/* Indicadores principais */}
       <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Estoque atual"
+          label="Estoque atual · geral"
           value={stockTotal}
           kind="int"
           suffix="un"
@@ -140,7 +151,7 @@ export default async function InicioPage({
           value={soldTotal}
           icon={Receipt}
           hint={`${m.sales_count} vendas · ${m.units_sold} unidades`}
-          href="/vendas"
+          href={salesUrl}
           accent
         />
         <StatCard
@@ -157,7 +168,7 @@ export default async function InicioPage({
           icon={Send}
           featured
           hint="Vendas recebidas ou fiadas com repasse pendente"
-          href="/repasses"
+          href={batchFilter.batchId ? undefined : "/repasses"}
         />
       </section>
 
@@ -169,7 +180,7 @@ export default async function InicioPage({
           value={n(m.receivable)}
           icon={Clock}
           tone="warning"
-          href="/fiados"
+          href={batchFilter.batchId ? undefined : "/fiados"}
         />
         <StatCard label="Lucro recebido" value={n(m.profit_received)} icon={PiggyBank} tone="success" />
         <StatCard label="Valor do pai · total vendido" value={n(m.transfer_total)} icon={Wallet} />
@@ -180,7 +191,7 @@ export default async function InicioPage({
       <section className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         {/* Estoque por produto */}
         <Panel
-          title="Estoque"
+          title="Estoque geral"
           description={`${stockTotal} unidades em ${byProduct.size} produto(s)`}
           icon={Package}
           action={
@@ -220,7 +231,7 @@ export default async function InicioPage({
             {low.length > 0 ? (
               <div className="grid gap-2 text-sm">
                 <span className="inline-flex items-center gap-1.5 text-warning">
-                  <AlertTriangle className="h-4 w-4" /> Estoque baixo:
+                  <AlertTriangle className="h-4 w-4" /> Estoque baixo · geral:
                 </span>
                 {low.map((product) => (
                   <div key={product.product_id} className="flex flex-wrap items-center justify-between gap-2">
@@ -307,7 +318,7 @@ export default async function InicioPage({
         description={`${m.sales_count} vendas · ${m.units_sold} unidades no período`}
         icon={Receipt}
         action={
-          <Link href="/vendas" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          <Link href={salesUrl} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
             Ver todas <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         }
@@ -320,7 +331,7 @@ export default async function InicioPage({
             {dashboard.sales.map((sale) => (
               <li key={sale.id}>
                 <Link
-                  href={`/vendas/${sale.id}`}
+                  href={buildFilterUrl(`/vendas/${sale.id}`, { voltar: currentUrl })}
                   className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground">
@@ -370,23 +381,5 @@ function Legend({
         <p className="break-words font-medium tabular-nums">{value}</p>
       </div>
     </div>
-  );
-}
-
-function PeriodLink({
-  current,
-  value,
-  label,
-}: {
-  current?: string;
-  value: string;
-  label: string;
-}) {
-  const active = (current ?? "") === value || (!current && value === "");
-  const href = value ? `/inicio?periodo=${value}` : "/inicio";
-  return (
-    <Link href={href} className="segmented-item min-h-8 px-3" data-active={active}>
-      {label}
-    </Link>
   );
 }

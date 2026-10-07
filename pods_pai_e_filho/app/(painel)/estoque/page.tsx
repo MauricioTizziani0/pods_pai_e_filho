@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ClipboardCheck, Filter, History, Package } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ClipboardCheck, Filter, History, Package, ShoppingCart } from "lucide-react";
 import { getSessionState } from "@/lib/auth";
 import { loadCatalog, loadLowStockThreshold } from "@/lib/data/catalog";
 import { summarizeActiveProductStock } from "@/lib/domain/stock";
@@ -25,11 +25,14 @@ export const metadata = { title: "Estoque" };
 export default async function EstoquePage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
+  const params: Record<string, string | undefined> = Object.fromEntries(
+    Object.entries(rawParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+  );
   const [catalog, session, threshold] = await Promise.all([
-    loadCatalog(),
+    loadCatalog({ productStatus: "active", stockActiveProductsOnly: true }),
     getSessionState(),
     loadLowStockThreshold(),
   ]);
@@ -46,11 +49,15 @@ export default async function EstoquePage({
   }
 
   const supabase = await createClient();
-  const { data: movements } = await supabase
-    .from("stock_movement_history")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(12);
+  const activeProductIds = catalog.data.products.map((product) => product.id);
+  const { data: movements } = activeProductIds.length === 0
+    ? { data: [] }
+    : await supabase
+      .from("stock_movement_history")
+      .select("*")
+      .in("product_id", activeProductIds)
+      .order("created_at", { ascending: false })
+      .limit(12);
 
   const iceFilter = parseIceParam(params.ice);
   const flavorQuery = params.sabor ?? "";
@@ -61,12 +68,11 @@ export default async function EstoquePage({
   );
 
   const productById = new Map(catalog.data.products.map((product) => [product.id, product]));
-  const groups = new Map<string, { name: string; active: boolean; items: typeof visibleStock }>();
+  const groups = new Map<string, { name: string; items: typeof visibleStock }>();
   for (const item of visibleStock) {
     const product = productById.get(item.product_id);
     const group = groups.get(item.product_id) ?? {
-      name: item.product_name,
-      active: product?.active ?? item.product_active,
+      name: product?.name ?? item.product_name,
       items: [],
     };
     group.items.push(item);
@@ -76,16 +82,12 @@ export default async function EstoquePage({
   if (!flavorQuery.trim() && iceFilter === "all") {
     for (const product of catalog.data.products) {
       if (product.active && !hasVariant.has(product.id)) {
-        groups.set(product.id, { name: product.name, active: true, items: [] });
+        groups.set(product.id, { name: product.name, items: [] });
       }
     }
   }
   const productStock = summarizeActiveProductStock(catalog.data.products, catalog.data.stock);
   const activeStockByProduct = new Map(productStock.map((product) => [product.product_id, product]));
-  const allStockByProduct = new Map<string, number>();
-  for (const item of catalog.data.stock) {
-    allStockByProduct.set(item.product_id, (allStockByProduct.get(item.product_id) ?? 0) + item.quantity);
-  }
   const total = visibleStock.reduce((sum, item) => sum + item.quantity, 0);
   const field = cn(controlClass, "h-11");
 
@@ -93,14 +95,26 @@ export default async function EstoquePage({
     <div className="grid w-full min-w-0 gap-6">
       <PageHeading
         title="Estoque"
-        eyebrow={`${total} unidades`}
+        eyebrow={`${groups.size} produto(s) · ${total} unidades exibidas`}
         description={consultas ? "O saldo vem das movimentações. Toda venda reduz o estoque na hora." : "O saldo vem das movimentações. Venda, fiado ou a receber baixam na hora."}
         action={{ href: "/estoque/conferencia", label: "Conferir" }}
       />
 
+      {canWrite ? (
+        <Link
+          href="/estoque/nova-compra"
+          className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-fit")}
+        >
+          <ShoppingCart className="h-4 w-4" /> Nova compra · criar lote
+        </Link>
+      ) : null}
+
       {isAdmin ? <WhatsAppPromotion /> : null}
 
       <form className="tech-card grid w-full min-w-0 gap-2 p-3 md:p-4" method="get">
+        {Object.entries(params).filter(([key]) => key !== "sabor" && key !== "ice").map(([key, value]) => (
+          <input key={key} type="hidden" name={key} value={value} />
+        ))}
         <p className="eyebrow flex items-center gap-1.5">
           <Filter className="h-3 w-3" /> Filtros
         </p>
@@ -120,12 +134,17 @@ export default async function EstoquePage({
       </form>
 
       <div className="stagger grid gap-3 md:grid-cols-2">
+        {groups.size === 0 ? (
+          <p className="text-sm text-muted-foreground md:col-span-2" role="status">
+            {catalog.data.products.length === 0
+              ? "Nenhum produto ativo para exibir."
+              : "Nenhum produto ativo encontrado para os filtros informados."}
+          </p>
+        ) : null}
         {[...groups.entries()].map(([productId, group]) => {
           const items = group.items;
           const activeProductStock = activeStockByProduct.get(productId);
-          const productTotal = group.active
-            ? activeProductStock?.quantity ?? 0
-            : allStockByProduct.get(productId) ?? 0;
+          const productTotal = activeProductStock?.quantity ?? 0;
           const max = Math.max(1, ...items.map((item) => item.quantity));
           return (
             <Panel
@@ -135,7 +154,7 @@ export default async function EstoquePage({
               accent
               action={
                 <div className="grid justify-items-end gap-1">
-                  {group.active ? <StockBadge quantity={productTotal} threshold={threshold} /> : null}
+                  <StockBadge quantity={productTotal} threshold={threshold} />
                   <p className="text-right">
                     <span className="block font-display text-2xl font-bold leading-none tabular-nums">{productTotal}</span>
                     <span className="eyebrow text-[10px]">estoque total</span>
@@ -171,6 +190,30 @@ export default async function EstoquePage({
                           style={{ width: `${Math.max(3, (item.quantity / max) * 100)}%` }}
                         />
                       </div>
+                      {item.quantity > 0 ? (
+                        <details className="mt-1 text-xs text-muted-foreground">
+                          <summary className="w-fit cursor-pointer hover:text-foreground">Origem do saldo</summary>
+                          <ul className="mt-1 grid gap-1 pl-3">
+                            {(catalog.data.batchItems ?? [])
+                              .filter((batchItem) => batchItem.variant_id === item.variant_id && batchItem.quantity_remaining > 0)
+                              .sort((a, b) => a.batch_number - b.batch_number)
+                              .map((batchItem) => (
+                                <li key={batchItem.batch_item_id}>
+                                  Lote {String(batchItem.batch_number).padStart(3, "0")} → {batchItem.quantity_remaining} un
+                                </li>
+                              ))}
+                            {Math.max(0, item.quantity - (catalog.data.batchItems ?? [])
+                              .filter((batchItem) => batchItem.variant_id === item.variant_id)
+                              .reduce((sum, batchItem) => sum + batchItem.quantity_remaining, 0)) > 0 ? (
+                                <li>
+                                  Sem lote conhecido → {Math.max(0, item.quantity - (catalog.data.batchItems ?? [])
+                                    .filter((batchItem) => batchItem.variant_id === item.variant_id)
+                                    .reduce((sum, batchItem) => sum + batchItem.quantity_remaining, 0))} un
+                                </li>
+                              ) : null}
+                          </ul>
+                        </details>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -186,7 +229,7 @@ export default async function EstoquePage({
 
       <Panel
         title="Movimentações recentes"
-        description="Últimas 12 entradas, saídas e ajustes"
+        description="Últimas 12 entradas, saídas e ajustes de produtos ativos"
         icon={History}
         bodyClassName="p-0"
         action={canWrite ? (
@@ -222,6 +265,7 @@ export default async function EstoquePage({
                     </p>
                     <p className="break-words text-xs text-muted-foreground">
                       {movement.movement_name} · {formatDate(movement.movement_date)}
+                      {movement.batch_number ? ` · Lote ${String(movement.batch_number).padStart(3, "0")}` : ""}
                       {movement.user_name ? ` · ${movement.user_name}` : ""}
                       {movement.sale_id ? (
                         <>

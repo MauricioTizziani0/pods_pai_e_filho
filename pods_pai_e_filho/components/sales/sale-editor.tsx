@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, History, Pencil, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, History, Layers3, Pencil, Send } from "lucide-react";
 import { cancelSaleAction, confirmReceiptAction, updateSaleAction } from "@/lib/actions/sales";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { getFlavorDisplayName } from "@/lib/domain/flavors";
-import type { AuditLog, CatalogSnapshot, SaleItem, SaleOverview } from "@/lib/types";
+import type { AuditLog, CatalogSnapshot, SaleBatchAllocation, SaleItem, SaleOverview } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +28,7 @@ const auditLabels: Record<string, string> = {
 export function SaleEditor({
   sale,
   items,
+  batchAllocations,
   catalog,
   audit,
   canWrite,
@@ -35,6 +36,7 @@ export function SaleEditor({
 }: {
   sale: SaleOverview;
   items: SaleItem[];
+  batchAllocations: SaleBatchAllocation[];
   catalog: CatalogSnapshot;
   audit: AuditLog[];
   canWrite: boolean;
@@ -69,6 +71,12 @@ export function SaleEditor({
   const received = Boolean(status?.counts_as_received);
   const locked = sale.transfer_paid;
   const fiadoChecked = received ? sale.is_credit === true : fiado;
+  const allocationsByItem = new Map<string, SaleBatchAllocation[]>();
+  for (const allocation of batchAllocations) {
+    const group = allocationsByItem.get(allocation.sale_item_id) ?? [];
+    group.push(allocation);
+    allocationsByItem.set(allocation.sale_item_id, group);
+  }
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -125,6 +133,31 @@ export function SaleEditor({
           <p className="mt-3 text-sm text-muted-foreground">Motivo do cancelamento: {sale.cancel_reason}</p>
         ) : null}
       </section>
+
+      <Panel title="Origem do estoque" description="Unidades vinculadas aos lotes que atenderam cada item." icon={Layers3}>
+        <ul className="grid gap-3">
+          {items.map((item) => {
+            const allocations = allocationsByItem.get(item.id) ?? [];
+            const canceled = sale.cancelled_at !== null;
+            const allocated = allocations.filter((allocation) => canceled ? allocation.reversed_at !== null : allocation.reversed_at === null);
+            const allocatedQuantity = allocated.reduce((sum, allocation) => sum + allocation.quantity, 0);
+            const withoutOrigin = Math.max(0, item.quantity - allocatedQuantity);
+            return (
+              <li key={item.id} className="grid gap-1 rounded-md border border-border/70 bg-surface p-3 text-sm">
+                <p className="font-medium">{item.product_name} · {item.variant_name}</p>
+                {allocated.map((allocation) => (
+                  <p key={allocation.id} className="text-muted-foreground">
+                    {allocation.batch_number ? `Lote ${String(allocation.batch_number).padStart(3, "0")}` : "Lote sem identificação"}
+                    {canceled ? " · devolvido ao estoque" : ""} · {allocation.quantity} un · custo {formatBRL(allocation.unit_cost)} / un
+                  </p>
+                ))}
+                {withoutOrigin > 0 ? <p className="text-muted-foreground">Sem lote conhecido · {withoutOrigin} un</p> : null}
+                {allocations.length === 0 ? <p className="text-muted-foreground">Origem anterior à implantação dos lotes.</p> : null}
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
 
       {consultas ? (
         <Panel title="Detalhes do meu repasse" description="Valores e situação de cada produto vendido" icon={Send}>

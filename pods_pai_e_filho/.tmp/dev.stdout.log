@@ -1,0 +1,103 @@
+▲ Next.js 16.3.8 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.51.172:3000
+- Environments: .env
+✓ Ready in 1461ms
+✓ Running next.config.ts took 1603ms
+
+ GET /inicio 200 in 3.2s (next.js: 187ms, proxy.ts: 605ms, application-code: 2.4s)
+ GET / 307 in 810ms (next.js: 44ms, proxy.ts: 666ms, application-code: 100ms)
+ GET /auth/login 200 in 153ms (next.js: 37ms, proxy.ts: 6ms, application-code: 110ms)
+ GET /inicio 200 in 2.4s (next.js: 8ms, proxy.ts: 9ms, application-code: 2.4s)
+ GET /inicio 200 in 2.1s (next.js: 13ms, proxy.ts: 13ms, application-code: 2.0s)
+ GET /manifest.webmanifest 200 in 113ms (next.js: 87ms, application-code: 26ms)
+ GET /vendas/nova 200 in 940ms (next.js: 68ms, proxy.ts: 11ms, application-code: 861ms)
+ GET /lotes 200 in 2.4s (next.js: 1647ms, proxy.ts: 6ms, application-code: 757ms)
+ GET /lotes/estoque-legado 200 in 1810ms (next.js: 771ms, proxy.ts: 9ms, application-code: 1030ms)
+ POST /lotes/estoque-legado 200 in 2.6s (next.js: 6ms, proxy.ts: 8ms, application-code: 2.6s)
+  └─ ƒ createLegacyBatchAction({"items":["[Object]"],"notes":""}) in 1621ms lib/actions/stock.ts
+ GET /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 2.7s (next.js: 1425ms, proxy.ts: 12ms, application-code: 1234ms)
+ GET /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 1564ms (next.js: 13ms, proxy.ts: 8ms, application-code: 1543ms)
+ GET /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 1652ms (next.js: 23ms, proxy.ts: 10ms, application-code: 1619ms)
+ GET /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 1381ms (next.js: 20ms, proxy.ts: 5ms, application-code: 1355ms)
+ POST /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 2.4s (next.js: 32ms, proxy.ts: 11ms, application-code: 2.3s)
+  └─ ƒ cancelPurchaseBatchAction("4e9af973-adf1-44b9-be97-46f619e1de17") in 819ms lib/actions/stock.ts
+ GET /lotes 200 in 708ms (next.js: 14ms, proxy.ts: 6ms, application-code: 688ms)
+ GET /lotes/4e9af973-adf1-44b9-be97-46f619e1de17 200 in 1376ms (next.js: 20ms, proxy.ts: 6ms, application-code: 1350ms)
+ GET /lotes 200 in 743ms (next.js: 11ms, proxy.ts: 7ms, application-code: 725ms)
+ GET /vendas/nova 200 in 883ms (next.js: 12ms, proxy.ts: 5ms, application-code: 867ms)
+ GET /produtos 200 in 785ms (next.js: 51ms, proxy.ts: 5ms, application-code: 728ms)
+ GET /lotes 200 in 710ms (next.js: 12ms, proxy.ts: 7ms, application-code: 691ms)
+ GET /estoque 200 in 1482ms (next.js: 54ms, proxy.ts: 5ms, application-code: 1422ms)
+ GET /vendas/nova 200 in 795ms (next.js: 8ms, proxy.ts: 6ms, application-code: 781ms)
+ POST /vendas/nova 200 in 2.7s (next.js: 8ms, proxy.ts: 7ms, application-code: 2.7s)
+  └─ ƒ createSaleAction({"customerId":"","customerName":"Teste 3","customerTypeId":"30000000-0000-4000-8000-000000000001","...":"6 items not stringified"}) in 1607ms lib/actions/sales.ts
+ GET /vendas/c51e02fb-aef4-44e9-9a57-dde90e7bb6e9 200 in 3.0s (next.js: 706ms, proxy.ts: 9ms, application-code: 2.3s)
+ GET /inicio 200 in 1774ms (next.js: 15ms, proxy.ts: 5ms, application-code: 1753ms)
+ GET /vendas/141cec49-446f-4011-9473-e856312d9ebf 200 in 1392ms (next.js: 32ms, proxy.ts: 7ms, application-code: 1353ms)
+ GET /vendas/141cec49-446f-4011-9473-e856312d9ebf 200 in 1363ms (next.js: 21ms, proxy.ts: 9ms, application-code: 1333ms)
+ POST /vendas/141cec49-446f-4011-9473-e856312d9ebf 200 in 2.2s (next.js: 23ms, proxy.ts: 5ms, application-code: 2.2s)
+  └─ ƒ confirmReceiptAction("141cec49-446f-4011-9473-e856312d9ebf") in 710ms lib/actions/sales.ts
+ GET /vendas 200 in 1612ms (next.js: 49ms, proxy.ts: 6ms, application-code: 1557ms)
+ GET /inicio 200 in 895ms (next.js: 6ms, proxy.ts: 5ms, application-code: 884ms)
+ GET /vendas 200 in 1520ms (next.js: 15ms, proxy.ts: 8ms, application-code: 1497ms)
+ GET /relatorios 200 in 2.3s (next.js: 796ms, proxy.ts: 6ms, application-code: 1524ms)
+ GET /lotes 200 in 728ms (next.js: 7ms, proxy.ts: 9ms, application-code: 712ms)
+ GET /inicio 200 in 1401ms (next.js: 63ms, proxy.ts: 6ms, application-code: 1332ms)
+ GET /vendas/nova 200 in 857ms (next.js: 14ms, proxy.ts: 8ms, application-code: 834ms)
+ GET /clientes 200 in 1708ms (next.js: 568ms, proxy.ts: 8ms, application-code: 1132ms)
+ POST /clientes 200 in 1821ms (next.js: 23ms, proxy.ts: 13ms, application-code: 1785ms)
+  └─ ƒ saveCustomerAction({"active":true,"customerTypeId":"30000000-0000-4000-8000-000000000001","name":"Teste Cliente","...":"2 items not stringified"}) in 872ms lib/actions/catalog.ts
+ GET /clientes 200 in 805ms (next.js: 10ms, proxy.ts: 13ms, application-code: 782ms)
+ GET /produtos 200 in 1054ms (next.js: 16ms, proxy.ts: 8ms, application-code: 1029ms)
+ GET /produtos 200 in 860ms (next.js: 11ms, proxy.ts: 17ms, application-code: 832ms)
+ POST /produtos 200 in 3.1s (next.js: 9ms, proxy.ts: 12ms, application-code: 3.1s)
+  └─ ƒ saveProductAction({"active":true,"approximatePuffs":"30000","brand":"Ignite","...":"6 items not stringified"}) in 1862ms lib/actions/catalog.ts
+ POST /produtos 200 in 2.2s (next.js: 11ms, proxy.ts: 19ms, application-code: 2.2s)
+  └─ ƒ saveProductAction({"active":false,"approximatePuffs":"30000","brand":"GenÃ©rica","...":"4 items not stringified"}) in 1354ms lib/actions/catalog.ts
+ GET /produtos 200 in 679ms (next.js: 8ms, proxy.ts: 9ms, application-code: 662ms)
+ GET /produtos 200 in 28ms (next.js: 13ms, proxy.ts: 8ms, application-code: 7ms)
+ GET /produtos 200 in 1042ms (next.js: 6ms, proxy.ts: 6ms, application-code: 1030ms)
+ GET /lotes 200 in 1053ms (next.js: 14ms, proxy.ts: 5ms, application-code: 1034ms)
+ GET /produtos 200 in 1066ms (next.js: 7ms, proxy.ts: 9ms, application-code: 1050ms)
+ GET /lotes 200 in 941ms (next.js: 125ms, proxy.ts: 9ms, application-code: 807ms)
+ GET /produtos 200 in 851ms (next.js: 9ms, proxy.ts: 9ms, application-code: 833ms)
+ GET /vendas 200 in 1436ms (next.js: 13ms, proxy.ts: 8ms, application-code: 1415ms)
+ GET /estoque 200 in 1272ms (next.js: 15ms, proxy.ts: 6ms, application-code: 1251ms)
+ GET /lotes 200 in 917ms (next.js: 31ms, proxy.ts: 30ms, application-code: 855ms)
+ GET /estoque 200 in 1053ms (next.js: 16ms, proxy.ts: 21ms, application-code: 1016ms)
+ GET /estoque/nova-compra 200 in 1566ms (next.js: 695ms, proxy.ts: 5ms, application-code: 865ms)
+ GET /produtos 200 in 959ms (next.js: 30ms, proxy.ts: 7ms, application-code: 923ms)
+ POST /produtos 200 in 2.9s (next.js: 12ms, proxy.ts: 385ms, application-code: 2.5s)
+  └─ ƒ savePriceAction({"customerTypeId":"30000000-0000-4000-8000-000000000001","fatherTransfer":"125","productId":"5cb4a798-fa1e-4360-b53e-d4cdd6e3bf34","...":"1 item not stringified"}) in 1647ms lib/actions/catalog.ts
+ GET /produtos 200 in 870ms (next.js: 18ms, proxy.ts: 7ms, application-code: 845ms)
+ POST /produtos 200 in 2.2s (next.js: 12ms, proxy.ts: 9ms, application-code: 2.1s)
+  └─ ƒ savePriceAction({"customerTypeId":"30000000-0000-4000-8000-000000000001","fatherTransfer":"115","productId":"5cb4a798-fa1e-4360-b53e-d4cdd6e3bf34","...":"1 item not stringified"}) in 1315ms lib/actions/catalog.ts
+ GET /produtos 200 in 905ms (next.js: 18ms, proxy.ts: 8ms, application-code: 879ms)
+ GET /produtos 200 in 839ms (next.js: 9ms, proxy.ts: 7ms, application-code: 823ms)
+ POST /produtos 200 in 2.4s (next.js: 10ms, proxy.ts: 14ms, application-code: 2.3s)
+  └─ ƒ savePriceAction({"customerTypeId":"30000000-0000-4000-8000-000000000002","fatherTransfer":"115","productId":"5cb4a798-fa1e-4360-b53e-d4cdd6e3bf34","...":"1 item not stringified"}) in 1324ms lib/actions/catalog.ts
+ POST /produtos 200 in 1604ms (next.js: 13ms, proxy.ts: 19ms, application-code: 1572ms)
+  └─ ƒ saveVariantAction({"active":true,"isIce":false,"name":"Grape","...":"1 item not stringified"}) in 799ms lib/actions/catalog.ts
+ GET /produtos 200 in 862ms (next.js: 10ms, proxy.ts: 10ms, application-code: 842ms)
+ POST /produtos 200 in 1521ms (next.js: 11ms, proxy.ts: 10ms, application-code: 1500ms)
+  └─ ƒ saveVariantAction({"active":true,"isIce":false,"name":"Passion Fruit","...":"1 item not stringified"}) in 785ms lib/actions/catalog.ts
+ GET /produtos 200 in 701ms (next.js: 8ms, proxy.ts: 6ms, application-code: 686ms)
+ GET /lotes 200 in 1311ms (next.js: 13ms, proxy.ts: 8ms, application-code: 1291ms)
+ GET /estoque 200 in 1609ms (next.js: 16ms, proxy.ts: 6ms, application-code: 1587ms)
+ GET /estoque/nova-compra 200 in 1012ms (next.js: 26ms, proxy.ts: 6ms, application-code: 979ms)
+ POST /estoque/nova-compra 200 in 2.8s (next.js: 9ms, proxy.ts: 5ms, application-code: 2.8s)
+  └─ ƒ createPurchaseAction({"items":["[Object]","[Object]","[Object]"],"notes":"","purchaseDate":"2026-10-07"}) in 1674ms lib/actions/stock.ts
+ GET /lotes/23b94300-7f20-42b6-92c4-272cc015a662 200 in 1439ms (next.js: 35ms, proxy.ts: 13ms, application-code: 1391ms)
+ GET /lotes/23b94300-7f20-42b6-92c4-272cc015a662 200 in 1436ms (next.js: 14ms, proxy.ts: 6ms, application-code: 1415ms)
+ GET /estoque 200 in 1346ms (next.js: 7ms, proxy.ts: 8ms, application-code: 1331ms)
+ POST /estoque 200 in 866ms (next.js: 12ms, proxy.ts: 8ms, application-code: 845ms)
+  └─ ƒ generateWhatsAppMessageAction() in 825ms lib/actions/promotion.ts
+ POST /estoque 200 in 1627ms (next.js: 8ms, proxy.ts: 9ms, application-code: 1610ms)
+  └─ ƒ generateWhatsAppMessageAction() in 1595ms lib/actions/promotion.ts
+ POST /estoque 200 in 1147ms (next.js: 10ms, proxy.ts: 7ms, application-code: 1130ms)
+  └─ ƒ generateWhatsAppMessageAction() in 1117ms lib/actions/promotion.ts
+ GET /inicio 200 in 1479ms (next.js: 13ms, proxy.ts: 9ms, application-code: 1457ms)
+ GET /lotes 200 in 1807ms (next.js: 16ms, proxy.ts: 680ms, application-code: 1112ms)
+ GET /relatorios 200 in 1597ms (next.js: 182ms, proxy.ts: 6ms, application-code: 1409ms)
+ GET /inicio 200 in 1843ms (next.js: 10ms, proxy.ts: 7ms, application-code: 1826ms)

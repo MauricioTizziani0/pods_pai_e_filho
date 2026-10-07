@@ -23,7 +23,7 @@ export function StockEntryForm({
   const router = useRouter();
   const options = stock.filter((item) => item.variant_active && item.product_active);
   const [variantId, setVariantId] = useState(options[0]?.variant_id ?? "");
-  const [type, setType] = useState("ENTRADA");
+  const [type, setType] = useState("AJUSTE_ENTRADA");
   const [quantity, setQuantity] = useState(1);
   const [date, setDate] = useState(todayInBrazil());
   const [notes, setNotes] = useState("");
@@ -39,7 +39,7 @@ export function StockEntryForm({
   }
 
   return (
-    <Panel title="Lançar estoque" description="Entradas e ajustes manuais" icon={PackagePlus}>
+    <Panel title="Ajuste de estoque" description="Use apenas para corrigir divergências. Compras criam um lote separado." icon={PackagePlus}>
       <form
         className="grid gap-4"
         onSubmit={(event) => {
@@ -81,7 +81,6 @@ export function StockEntryForm({
           </Field>
           <Field label="Tipo">
             <Select value={type} onChange={(event) => setType(event.target.value)}>
-              <option value="ENTRADA">Entrada</option>
               <option value="AJUSTE_ENTRADA">Ajuste de entrada</option>
               <option value="AJUSTE_SAIDA">Ajuste de saída</option>
             </Select>

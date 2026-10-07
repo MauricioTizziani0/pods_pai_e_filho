@@ -57,11 +57,35 @@ export function SaleForm({
   const available = catalog.stock.find((item) => item.variant_id === variantId)?.quantity ?? 0;
   const isCredit = !received && fiado;
 
+  const saleUnitCost = useMemo(() => {
+    if (!variantId || quantity <= 0 || !Number.isInteger(quantity)) return null;
+    const batches = (catalog.batchItems ?? [])
+      .filter((item) => item.variant_id === variantId && item.status !== "CANCELADO" && item.quantity_remaining > 0)
+      .sort((a, b) => a.purchase_date.localeCompare(b.purchase_date) || a.batch_number - b.batch_number);
+    const batchAvailable = batches.reduce((sum, item) => sum + item.quantity_remaining, 0);
+    let remaining = quantity;
+    let totalCost = 0;
+    const legacyAvailable = Math.max(0, available - batchAvailable);
+    if (legacyAvailable > 0 && remaining > 0) {
+      if (product?.cost_price == null) return null;
+      const taken = Math.min(remaining, legacyAvailable);
+      totalCost += taken * Number(product.cost_price);
+      remaining -= taken;
+    }
+    for (const batch of batches) {
+      if (remaining === 0) break;
+      const taken = Math.min(remaining, batch.quantity_remaining);
+      totalCost += taken * Number(batch.unit_cost);
+      remaining -= taken;
+    }
+    return remaining === 0 ? totalCost / quantity : null;
+  }, [catalog.batchItems, variantId, quantity, available, product?.cost_price]);
+
   const preview = useMemo(() => {
-    if (!price || product?.cost_price == null || quantity <= 0) return null;
+    if (!price || saleUnitCost == null || quantity <= 0) return null;
     try {
       return previewSale({
-        unitCost: Number(product.cost_price),
+        unitCost: saleUnitCost,
         unitPrice: Number(price.sale_price),
         unitTransfer: Number(price.father_transfer),
         quantity,
@@ -71,7 +95,7 @@ export function SaleForm({
     } catch {
       return null;
     }
-  }, [price, product?.cost_price, quantity, received, fiado]);
+  }, [price, saleUnitCost, quantity, received, fiado]);
 
   function changeProduct(nextId: string) {
     setProductId(nextId);
@@ -265,7 +289,7 @@ export function SaleForm({
       </div>
 
       <div className="grid gap-4 lg:sticky lg:top-6">
-        <Summary preview={preview} missingPrice={!price} missingCost={product?.cost_price == null} available={available} quantity={quantity} />
+        <Summary preview={preview} missingPrice={!price} missingCost={saleUnitCost == null} available={available} quantity={quantity} />
         {quantity > available ? (
           <Notice>Estoque insuficiente. Disponível: {available}.</Notice>
         ) : null}
@@ -305,7 +329,7 @@ function Summary({
   }
   if (!preview) return null;
   const rows: Array<[string, string, string?]> = [
-    ["Preço de custo unitário", formatBRL(preview.unitCost)],
+    ["Custo médio ponderado (FIFO)", formatBRL(preview.unitCost)],
     ["Preço unitário", formatBRL(preview.unitPrice)],
     ["Repasse unitário ao pai", formatBRL(preview.unitTransfer)],
     ["Lucro unitário do pai", formatBRL(preview.unitFatherProfit), "text-primary"],

@@ -55,7 +55,7 @@ Implementadas em `lib/domain/stock.ts` e nas funções `register_stock_movement`
 
 ## Regras de sabores Ice
 
-`lib/domain/flavors.ts` + migration `supabase/migrations/20261001160000_variant_is_ice.sql`:
+`lib/domain/flavors.ts` + migration `supabase/migrations/20261001160000_003_variant_is_ice.sql`:
 
 - Nome persistido: se `is_ice`, remove “Ice” do final (ex.: “Grape Ice” → “Grape”).
 - Nome exibido: “Grape” + Ice → “Grape Ice”, sem duplicar.
@@ -93,6 +93,12 @@ Na raiz do projeto:
 npm run check:finance
 npm run check:flavors
 npm run check:stock
+npm run check:batch-filters
+npm run check:batch-sales
+npm run check:financial-filters
+npm run check:product-filters
+npm run check:dashboard-filters
+npm run check:stock-visibility
 npm run lint
 npx tsc --noEmit
 ```
@@ -103,7 +109,19 @@ Opcional, se o ambiente estiver íntegro:
 npm run build
 ```
 
-Não existe suíte Jest/Vitest/Playwright. Os `check:*` são asserts manuais em TypeScript. Se algum falhar, registre o erro completo.
+Não existe suíte Jest/Vitest/Playwright. Os `check:*` usam asserts com cenários locais; os testes de integração simulam as consultas e executam os módulos reais. Se algum falhar, registre o erro completo.
+
+## Filtros iniciais e histórico por lote
+
+- Dashboard e Relatórios: dois lotes abertos selecionam a compra mais recente; sem aberto, selecionam o finalizado mais recente. Cancelados não entram na seleção automática.
+- Sem lote válido: Todos os lotes inclui histórico legado. Seleção explícita válida e Todos os lotes permanecem após atualização e volta de um detalhe.
+- Verifique o estado de carregamento antes dos indicadores; a primeira exibição financeira já deve corresponder ao lote escolhido.
+- Uma venda de R$ 300 com uma unidade de R$ 150 em cada lote deve contribuir R$ 150 e uma unidade por lote, e R$ 300 e duas unidades no geral. Custos, repasses e lucros seguem os snapshots das alocações.
+- Combine lote com período, produto, cliente, status, Ice e sabor; preserve os filtros ao trocar o lote.
+- Produtos inicia em Ativos; ativo com estoque zero aparece. Inativos e Todos respeitam o status consultado. Após desativar, o produto sai de Ativos e permanece atualizado em Todos.
+- Produtos inativos de vendas antigas continuam no histórico financeiro. O catálogo não herda o lote da Dashboard.
+- Confira os mesmos padrões em ADMIN e CONSULTAS, com CONSULTAS somente leitura, lucro do pai visível, Fiado e lucro do filho ocultos. Estoque e alertas permanecem gerais.
+- Em Estoque, produtos inativos não aparecem mesmo com saldo ou pesquisa por sabor. Ativos esgotados continuam visíveis; os totais da listagem incluem apenas os ativos. Desativar/reativar atualiza a tela e preserva saldo, sabores e lotes. Confira as mensagens distintas sem produtos ativos e sem correspondência aos filtros.
 
 Antes de escrever código, leia o guia do Next.js em `node_modules/next/dist/docs/` (este projeto usa a versão atual do Next, que pode divergir do seu treinamento).
 
@@ -111,9 +129,9 @@ Antes de escrever código, leia o guia do Next.js em `node_modules/next/dist/doc
 
 1. Confirme `.env.local` com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (nunca service_role).
 2. Confirme que as migrations em `supabase/migrations/` foram aplicadas no projeto Supabase, nesta ordem:
-   - `20261001140000_pods_init.sql`
-   - `20261001150000_product_safety.sql`
-   - `20261001160000_variant_is_ice.sql`
+   - `20261001140000_001_pods_init.sql`
+   - `20261001150000_002_product_safety.sql`
+   - `20261001160000_003_variant_is_ice.sql`
 3. Suba `npm run dev` e use o navegador (ferramentas de browser do Cursor) para exercitar fluxos de verdade: clicar, digitar, submeter, navegar. Screenshot sozinho não conta como verificação.
 4. Use duas contas se possível:
    - **Admin** (escrita)

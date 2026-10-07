@@ -20,7 +20,7 @@ export async function loadPromotionSettings(): Promise<
     .eq("key", "whatsapp_promotion")
     .maybeSingle();
   if ((error && isMissingSchema(error)) || (!error && data?.value == null)) {
-    return { ok: false, message: "Execute a migration supabase/migrations/20261002120000_whatsapp_promotion.sql no SQL Editor do Supabase para habilitar a divulgação." };
+    return { ok: false, message: "Execute a migration supabase/migrations/20261002120000_006_whatsapp_promotion.sql no SQL Editor do Supabase para habilitar a divulgação." };
   }
   if (error) return { ok: false, message: dbErrorMessage(error) };
   return validatePromotionSettings(data?.value);

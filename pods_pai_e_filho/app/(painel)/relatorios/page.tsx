@@ -1,8 +1,10 @@
 import { Filter } from "lucide-react";
+import { redirect } from "next/navigation";
 import { loadCatalog } from "@/lib/data/catalog";
+import { listBatches } from "@/lib/data/batches";
+import { loadFinancialSales } from "@/lib/data/financial-sales";
 import { getSessionState } from "@/lib/auth";
 import { loadConsultasFinancialSummary } from "@/lib/data/dashboard";
-import { createClient } from "@/lib/supabase/server";
 import { formatBRL, resolvePeriod } from "@/lib/format";
 import type { SalesReport } from "@/lib/types";
 import { Notice } from "@/components/feedback/notice";
@@ -13,23 +15,39 @@ import { buttonVariants } from "@/components/ui/button";
 import { iceFilterToBool, parseIceParam } from "@/lib/domain/flavors";
 import { cn } from "@/lib/utils";
 import { isConsultasRole } from "@/lib/domain/roles";
+import { buildFilterUrl, formatBatchLabel, resolveBatchFilter } from "@/lib/domain/batch-filters";
+import { reportForBatchSales } from "@/lib/domain/batch-sales";
 
 export const metadata = { title: "Relatórios" };
 
 export default async function RelatoriosPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
+  const params: Record<string, string | undefined> = Object.fromEntries(
+    Object.entries(rawParams).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+  );
   const period = resolvePeriod({
     periodo: params.periodo ?? (params.de || params.ate ? "personalizado" : undefined),
     de: params.de,
     ate: params.ate,
   });
-  const [catalog, session] = await Promise.all([loadCatalog(), getSessionState()]);
+  const [catalog, session, batches] = await Promise.all([loadCatalog(), getSessionState(), listBatches()]);
+  if (!batches.ok && params.lote && params.lote !== "todos") {
+    return (
+      <div className="grid w-full min-w-0 gap-6">
+        <PageHeading title="Relatórios" eyebrow="Análise" description={`Lote selecionado · ${period.label}`} />
+        <Notice>{batches.message}</Notice>
+      </div>
+    );
+  }
+  const selected = resolveBatchFilter(batches.batches, params.lote);
+  if (batches.ok && selected.shouldCanonicalize) {
+    redirect(buildFilterUrl("/relatorios", params, { lote: selected.value }));
+  }
   const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
-  const credit = consultas ? null : params.fiado === "sim" ? true : params.fiado === "nao" ? false : null;
   const ice = iceFilterToBool(parseIceParam(params.ice));
   let reportError: string | null = null;
   let consultasSummary: Awaited<ReturnType<typeof loadConsultasFinancialSummary>> | null = null;
@@ -46,31 +64,79 @@ export default async function RelatoriosPage({
       paymentStatusId: params.status,
       ice,
       flavor: params.sabor,
+      batchId: selected.batchId,
     });
     if (!consultasSummary.ok) reportError = consultasSummary.message;
   } else {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("sales_report", {
-      p_from: period.from,
-      p_to: period.to,
-      p_product_id: params.produto || null,
-      p_customer_id: null,
-      p_customer_name: params.cliente || null,
-      p_customer_type_id: params.tipo || null,
-      p_payment_status_id: params.status || null,
-      p_is_credit: credit,
-      p_is_ice: ice,
-      p_flavor: params.sabor || null,
+    const result = await loadFinancialSales({
+      from: period.from ?? undefined,
+      to: period.to ?? undefined,
+      productId: params.produto,
+      customer: params.cliente,
+      customerTypeId: params.tipo,
+      paymentStatusId: params.status,
+      credit: params.fiado,
+      ice: params.ice,
+      flavor: params.sabor,
+      batchId: selected.batchId ?? undefined,
     });
-    if (error) reportError = error.message;
-    report = (data ?? report) as SalesReport;
+    if (!result.ok) {
+      reportError = result.message;
+    } else {
+      const stockByProduct = new Map<string, number>();
+      if (catalog.ok) {
+        for (const balance of catalog.data.stock) {
+          if (ice !== null && balance.variant_is_ice !== ice) continue;
+          stockByProduct.set(balance.product_id, (stockByProduct.get(balance.product_id) ?? 0) + Number(balance.quantity));
+        }
+      }
+      const products = new Map(catalog.ok ? catalog.data.products.map((product) => [product.id, product]) : []);
+      const customerTypes = new Map(catalog.ok ? catalog.data.customerTypes.map((type) => [type.id, type]) : []);
+      const statuses = new Map(catalog.ok ? catalog.data.statuses.map((status) => [status.id, status]) : []);
+      const lines = result.lines.map((line) => ({
+        ...line,
+        product_name: products.get(line.product_id)?.name ?? line.product_name,
+        sale: {
+          ...line.sale,
+          customer_type_name: customerTypes.get(line.sale.customer_type_id)?.name ?? line.sale.customer_type_name,
+          payment_status_name: statuses.get(line.sale.payment_status_id)?.name ?? line.sale.payment_status_name,
+        },
+      }));
+      report = reportForBatchSales(lines, stockByProduct);
+
+      // Keep active catalog rows with zero sales, and historical sold rows.
+      if (catalog.ok) {
+        const valid = lines.filter((line) => line.sale.is_valid);
+        const soldProducts = new Set(valid.map((line) => line.product_id));
+        const soldCustomerTypes = new Set(valid.map((line) => line.sale.customer_type_id));
+        const soldStatuses = new Set(valid.map((line) => line.sale.payment_status_id));
+        const emptyRow = (name: string) => ({ name, quantity: 0, revenue: "0.00", transfer: "0.00", profit: "0.00" });
+        for (const type of catalog.data.customerTypes) {
+          if (type.active && !soldCustomerTypes.has(type.id)) report.by_customer_type.push(emptyRow(type.name));
+        }
+        for (const status of catalog.data.statuses) {
+          if (status.active && !status.is_terminal && !soldStatuses.has(status.id)) report.by_status.push(emptyRow(status.name));
+        }
+        for (const product of catalog.data.products) {
+          if (product.active && !soldProducts.has(product.id) && (!params.produto || params.produto === product.id)) {
+            report.by_product.push({ ...emptyRow(product.name), stock: stockByProduct.get(product.id) ?? 0 });
+          }
+        }
+        report.by_product.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+        const customerOrder = new Map(catalog.data.customerTypes.map((type) => [type.name, type.sort_order]));
+        const statusOrder = new Map(catalog.data.statuses.map((status) => [status.name, status.sort_order]));
+        report.by_customer_type.sort((a, b) => (customerOrder.get(a.name) ?? Infinity) - (customerOrder.get(b.name) ?? Infinity));
+        report.by_status.sort((a, b) => (statusOrder.get(a.name) ?? Infinity) - (statusOrder.get(b.name) ?? Infinity));
+      }
+    }
   }
   const field = cn(controlClass, "h-11");
 
   return (
     <div className="grid w-full min-w-0 gap-6">
-      <PageHeading title="Relatórios" eyebrow="Análise" description={period.label} />
+      <PageHeading title="Relatórios" eyebrow="Análise" description={`${selected.label} · ${period.label}`} />
       {!catalog.ok ? <Notice>{catalog.message}</Notice> : null}
+      {!batches.ok ? <Notice>{batches.message}</Notice> : null}
       {reportError ? <Notice>{reportError}</Notice> : null}
 
       <form className="tech-card grid gap-2 p-3 md:p-4" method="get">
@@ -79,8 +145,14 @@ export default async function RelatoriosPage({
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
           <input type="hidden" name="periodo" value="personalizado" />
-          <input className={field} type="date" name="de" defaultValue={params.de ?? ""} aria-label="De" />
-          <input className={field} type="date" name="ate" defaultValue={params.ate ?? ""} aria-label="Até" />
+          <select className={field} name="lote" defaultValue={selected.value} aria-label="Lote">
+            <option value="todos">Todos os lotes</option>
+            {batches.batches.map((batch) => (
+              <option key={batch.batch_id} value={batch.batch_id}>{formatBatchLabel(batch)}</option>
+            ))}
+          </select>
+          <input className={field} type="date" name="de" defaultValue={period.from ?? params.de ?? ""} aria-label="De" />
+          <input className={field} type="date" name="ate" defaultValue={period.to ?? params.ate ?? ""} aria-label="Até" />
           <input
             className={cn(field, "sm:col-span-2")}
             name="cliente"
@@ -187,10 +259,10 @@ function ReportTable({
         {rows.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-muted-foreground">Sem dados para este recorte.</li>
         ) : null}
-        {rows.map((row) => {
+        {rows.map((row, index) => {
           const share = (Number(row.revenue) / maxRevenue) * 100;
           return (
-            <li key={row.name} className="grid min-w-0 gap-2 px-4 py-3">
+            <li key={`${row.name}-${index}`} className="grid min-w-0 gap-2 px-4 py-3">
               <p className="min-w-0 break-words font-medium">{row.name}</p>
               <div className="bar-track h-1">
                 <div className="bar-fill" style={{ width: `${Math.max(2, share)}%` }} />
@@ -214,7 +286,7 @@ function ReportTable({
                 </div>
                 {showStock ? (
                   <div className="min-w-0">
-                    <dt className="text-muted-foreground">Estoque</dt>
+                    <dt className="text-muted-foreground">Estoque geral</dt>
                     <dd className="font-medium tabular-nums">{row.stock ?? 0}</dd>
                   </div>
                 ) : null}
@@ -242,7 +314,7 @@ function ReportTable({
               <th className="text-right">Faturamento</th>
               <th className="text-right">Repasse</th>
               <th className="text-right">Lucro</th>
-              {showStock ? <th className="text-right">Estoque</th> : null}
+              {showStock ? <th className="text-right">Estoque geral</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -253,10 +325,10 @@ function ReportTable({
                 </td>
               </tr>
             ) : null}
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               const share = (Number(row.revenue) / maxRevenue) * 100;
               return (
-                <tr key={row.name}>
+                <tr key={`${row.name}-${index}`}>
                   <td>
                     <p className="font-medium">{row.name}</p>
                     <div className="bar-track mt-1.5 h-1 max-w-[12rem]">

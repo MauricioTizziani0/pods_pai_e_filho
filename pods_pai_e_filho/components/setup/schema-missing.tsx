@@ -10,7 +10,7 @@ export function SchemaMissing({ message }: { message: string }) {
         <li>
           Cole o arquivo{" "}
           <code className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-xs">
-            supabase/migrations/20261001140000_pods_init.sql
+            supabase/migrations/20261001140000_001_pods_init.sql
           </code>
           .
         </li>

@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Banknote, Clock, HandCoins, Package, PiggyBank, Receipt, Send, TrendingUp, type LucideIcon } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
+import { DashboardFilters, type DashboardFiltersProps } from "@/components/dashboard/dashboard-filters";
+import { Notice } from "@/components/feedback/notice";
 import { Panel } from "@/components/ui/panel";
 import { PaymentBadge, StockBadge } from "@/components/sales/badges";
 import { formatBRL, formatDate } from "@/lib/format";
 import { getLowStockProducts, summarizeActiveProductStock } from "@/lib/domain/stock";
+import { buildFilterUrl } from "@/lib/domain/batch-filters";
 import type { ConsultasFinancialSummary } from "@/lib/types";
 import type { loadDashboard } from "@/lib/data/dashboard";
 import { cn } from "@/lib/utils";
-import { controlClass } from "@/components/ui/field";
-import { buttonVariants } from "@/components/ui/button";
 
 type DashboardData = Extract<Awaited<ReturnType<typeof loadDashboard>>, { ok: true }>;
 
@@ -17,12 +18,20 @@ export function ConsultasDashboard({
   dashboard,
   summary,
   periodLabel,
-  params,
+  batchLabel,
+  filters,
+  currentUrl,
+  salesUrl,
+  batchNotice,
 }: {
   dashboard: DashboardData;
   summary: ConsultasFinancialSummary;
   periodLabel: string;
-  params: { periodo?: string; de?: string; ate?: string };
+  batchLabel: string;
+  filters: DashboardFiltersProps;
+  currentUrl: string;
+  salesUrl: string;
+  batchNotice?: string;
 }) {
   const n = (value: string | number | null | undefined) => Number(value ?? 0) || 0;
   const productStock = summarizeActiveProductStock(dashboard.products, dashboard.stock);
@@ -40,36 +49,26 @@ export function ConsultasDashboard({
       <header className="grid gap-1">
         <p className="eyebrow">Visão financeira · CONSULTAS</p>
         <h1 className="font-display text-2xl font-bold">Início</h1>
-        <p className="text-sm text-muted-foreground">{periodLabel}</p>
+        <p className="text-sm text-muted-foreground">{batchLabel} · {periodLabel}</p>
       </header>
 
-      <form className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" method="get">
-        <div className="segmented w-full sm:w-auto">
-          <Link href="/inicio" className="segmented-item min-h-8 px-3" data-active={!(params.periodo === "mes" || params.periodo === "personalizado")}>Tudo</Link>
-          <Link href="/inicio?periodo=mes" className="segmented-item min-h-8 px-3" data-active={params.periodo === "mes"}>Este mês</Link>
-        </div>
-        <input type="hidden" name="periodo" value="personalizado" />
-        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-          <input className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")} type="date" name="de" aria-label="De" defaultValue={params.de ?? ""} />
-          <input className={cn(controlClass, "h-10 w-full min-w-0 sm:w-auto sm:min-w-[9.5rem]")} type="date" name="ate" aria-label="Até" defaultValue={params.ate ?? ""} />
-          <button className={cn(buttonVariants({ variant: "secondary" }), "h-10 w-full sm:w-auto")} type="submit">Filtrar</button>
-        </div>
-      </form>
+      {batchNotice ? <Notice>{batchNotice}</Notice> : null}
+      <DashboardFilters key={currentUrl} {...filters} />
 
       <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="A receber agora" value={n(summary.transfer_due_now)} icon={Send} featured hint={`${summary.due_now_sales} venda(s) · recebidas ou fiadas`} href="/repasses" />
-        <StatCard label="A receber futuramente" value={n(summary.transfer_future)} icon={Clock} tone="info" hint={`${summary.future_sales} venda(s) ainda não recebidas`} href="/repasses" />
-        {costUnknown ? <UncertainMoneyCard label="Meu lucro" value={n(summary.father_profit_total)} unknown missing={summary.father_profit_missing_items} icon={TrendingUp} featured /> : <StatCard label="Meu lucro" value={n(summary.father_profit_total)} icon={TrendingUp} tone="success" accent hint="Lucro do pai em todas as vendas válidas" />}
+        <StatCard label="A receber agora" value={n(summary.transfer_due_now)} icon={Send} featured hint={`${summary.due_now_sales} venda(s) · com repasse pendente`} href={filters.batchValue === "todos" ? "/repasses" : undefined} />
+        <StatCard label="A receber futuramente" value={n(summary.transfer_future)} icon={Clock} tone="info" hint={`${summary.future_sales} venda(s) ainda não recebidas`} href={filters.batchValue === "todos" ? "/repasses" : undefined} />
+        {costUnknown ? <UncertainMoneyCard label="Meu lucro" value={n(summary.father_profit_total)} unknown missing={summary.father_profit_missing_items} icon={TrendingUp} featured /> : <StatCard label="Meu lucro" value={n(summary.father_profit_total)} icon={TrendingUp} tone="success" accent hint="Lucro do pai nas vendas válidas deste recorte" />}
         {Number(summary.father_profit_missing_received_items) > 0 ? <UncertainMoneyCard label="Lucro já recebido" value={n(summary.father_profit_received)} unknown missing={summary.father_profit_missing_received_items} icon={PiggyBank} /> : <StatCard label="Lucro já recebido" value={n(summary.father_profit_received)} icon={PiggyBank} tone="success" hint="Lucro referente aos repasses já pagos" />}
         <StatCard label="Total já recebido" value={n(summary.transfer_received)} icon={HandCoins} tone="primary" accent hint="Repasses marcados como pagos" />
         <UncertainMoneyCard label="Custo dos produtos vendidos" value={n(summary.cost_sold)} unknown={costUnknown} missing={summary.cost_missing_items} icon={Banknote} />
-        <UncertainMoneyCard label="Estoque a custo" value={n(summary.stock_cost_total)} unknown={stockCostUnknown} missing={summary.stock_cost_missing_products} icon={Package} href="/estoque" />
-        <StatCard label="Faturamento vendido" value={n(summary.revenue)} icon={Receipt} hint={`${summary.sales_count} venda(s) · ${summary.units_sold} unidade(s) · total cobrado dos clientes`} href="/vendas" />
-        <StatCard label="Estoque atual" value={stockTotal} kind="int" suffix="un" icon={Package} tone={low.length > 0 ? "warning" : "success"} hint={`${stockedProductCount} produto(s) com saldo`} href="/estoque" />
+        <UncertainMoneyCard label="Estoque a custo · geral" value={n(summary.stock_cost_total)} unknown={stockCostUnknown} missing={summary.stock_cost_missing_products} icon={Package} href="/estoque" />
+        <StatCard label="Faturamento vendido" value={n(summary.revenue)} icon={Receipt} hint={`${summary.sales_count} venda(s) · ${summary.units_sold} unidade(s) · total cobrado dos clientes`} href={salesUrl} />
+        <StatCard label="Estoque atual · geral" value={stockTotal} kind="int" suffix="un" icon={Package} tone={low.length > 0 ? "warning" : "success"} hint={`${stockedProductCount} produto(s) com saldo`} href="/estoque" />
       </section>
 
       <section className="grid min-w-0 gap-3 lg:grid-cols-2">
-        <Panel title="Estoque disponível" description={`${stockTotal} unidades em ${stockedProductCount} produto(s)`} icon={Package} action={<Link href="/estoque" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">Ver estoque <ArrowRight className="h-3.5 w-3.5" /></Link>}>
+        <Panel title="Estoque geral disponível" description={`${stockTotal} unidades em ${stockedProductCount} produto(s)`} icon={Package} action={<Link href="/estoque" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">Ver estoque <ArrowRight className="h-3.5 w-3.5" /></Link>}>
           {productStock.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum produto ativo.</p> : (
             <ul className="grid gap-3">
               {productStock.map((product) => (
@@ -80,7 +79,7 @@ export function ConsultasDashboard({
               ))}
             </ul>
           )}
-          {low.length > 0 ? <div className="mt-4 grid gap-2 border-t border-border/70 pt-4 text-sm"><span className="inline-flex items-center gap-1.5 text-warning"><AlertTriangle className="h-4 w-4" />Estoque baixo:</span>{low.map((product) => <div key={product.product_id} className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{product.product_name}</span><span className="flex items-center gap-2"><StockBadge quantity={product.quantity} threshold={dashboard.lowStockThreshold} /><span className="text-muted-foreground">{product.quantity} un</span></span></div>)}</div> : null}
+          {low.length > 0 ? <div className="mt-4 grid gap-2 border-t border-border/70 pt-4 text-sm"><span className="inline-flex items-center gap-1.5 text-warning"><AlertTriangle className="h-4 w-4" />Estoque baixo · geral:</span>{low.map((product) => <div key={product.product_id} className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{product.product_name}</span><span className="flex items-center gap-2"><StockBadge quantity={product.quantity} threshold={dashboard.lowStockThreshold} /><span className="text-muted-foreground">{product.quantity} un</span></span></div>)}</div> : null}
         </Panel>
 
         <Panel title="Composição dos repasses" description="Recuperação do custo e lucro do pai" icon={Banknote}>
@@ -93,8 +92,8 @@ export function ConsultasDashboard({
         </Panel>
       </section>
 
-      <Panel title="Vendas recentes" description={`${summary.sales_count} venda(s) · ${summary.units_sold} unidade(s) no período`} icon={Receipt} action={<Link href="/vendas" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">Ver todas <ArrowRight className="h-3.5 w-3.5" /></Link>} bodyClassName="p-0">
-        {dashboard.sales.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhuma venda neste recorte.</p> : <ul className="divide-y divide-border/70">{dashboard.sales.map((sale) => <li key={sale.id}><Link href={`/vendas/${sale.id}`} className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground"><Receipt className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="break-words font-medium">{sale.customer_name}</p><p className="mt-0.5 break-words text-xs text-muted-foreground">{formatDate(sale.sale_date)} · {sale.items_label}</p></div><div className="flex min-w-0 shrink-0 flex-col items-end gap-1"><span className="break-words text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span><span className="flex flex-wrap justify-end gap-1"><PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} /></span></div></Link></li>)}</ul>}
+      <Panel title="Vendas recentes" description={`${summary.sales_count} venda(s) · ${summary.units_sold} unidade(s) no período`} icon={Receipt} action={<Link href={salesUrl} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">Ver todas <ArrowRight className="h-3.5 w-3.5" /></Link>} bodyClassName="p-0">
+        {dashboard.sales.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhuma venda neste recorte.</p> : <ul className="divide-y divide-border/70">{dashboard.sales.map((sale) => <li key={sale.id}><Link href={buildFilterUrl(`/vendas/${sale.id}`, { voltar: currentUrl })} className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 sm:items-center"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground"><Receipt className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="break-words font-medium">{sale.customer_name}</p><p className="mt-0.5 break-words text-xs text-muted-foreground">{formatDate(sale.sale_date)} · {sale.items_label}</p></div><div className="flex min-w-0 shrink-0 flex-col items-end gap-1"><span className="break-words text-right font-display font-semibold tabular-nums">{formatBRL(sale.total_amount)}</span><span className="flex flex-wrap justify-end gap-1"><PaymentBadge name={sale.payment_status_name} received={sale.counts_as_received} /></span></div></Link></li>)}</ul>}
       </Panel>
     </div>
   );

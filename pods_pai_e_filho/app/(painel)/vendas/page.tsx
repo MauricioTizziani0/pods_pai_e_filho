@@ -1,6 +1,7 @@
 import { Filter } from "lucide-react";
 import { loadCatalog } from "@/lib/data/catalog";
 import { listSales } from "@/lib/data/sales";
+import { listBatches } from "@/lib/data/batches";
 import { getSessionState } from "@/lib/auth";
 import { PageHeading } from "@/components/shell/page-heading";
 import { SaleList } from "@/components/sales/sale-list";
@@ -21,8 +22,9 @@ export default async function VendasPage({
   const params = await searchParams;
   const session = await getSessionState();
   const consultas = session.status === "ok" && isConsultasRole(session.profile.role_code);
-  const [catalog, sales] = await Promise.all([
+  const [catalog, batches, sales] = await Promise.all([
     loadCatalog(),
+    listBatches(),
     listSales({
       from: params.de,
       to: params.ate,
@@ -35,6 +37,7 @@ export default async function VendasPage({
       flavor: params.sabor,
       customer: params.cliente,
       situation: params.situacao,
+      batchId: params.lote,
     }),
   ]);
   const canWrite = session.status === "ok" && session.profile.can_write;
@@ -63,6 +66,16 @@ export default async function VendasPage({
             placeholder="Cliente"
             defaultValue={params.cliente ?? ""}
           />
+          {batches.ok ? (
+            <select className={field} name="lote" defaultValue={params.lote ?? ""} aria-label="Lote">
+              <option value="">Todos os lotes</option>
+              {batches.batches.map((batch) => (
+                <option key={batch.batch_id} value={batch.batch_id}>
+                  Lote {String(batch.batch_number).padStart(3, "0")}{batch.is_legacy ? " · estoque legado" : ""}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <select className={field} name="produto" defaultValue={params.produto ?? ""} aria-label="Produto">
             <option value="">Todos os produtos</option>
             {catalog.ok

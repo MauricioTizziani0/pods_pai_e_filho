@@ -5,6 +5,7 @@ import {
   Boxes,
   ChevronRight,
   ClipboardCheck,
+  Layers3,
   Receipt,
   Settings,
   Users,
@@ -19,6 +20,7 @@ const groups: Array<{ label: string; links: Array<{ href: string; label: string;
   {
     label: "Operação",
     links: [
+      { href: "/lotes", label: "Lotes", hint: "Compras, saldos e resultados por lote", icon: Layers3 },
       { href: "/vendas", label: "Histórico de vendas", hint: "Filtros, situação e repasses", icon: Receipt },
       { href: "/produtos", label: "Produtos e preços", hint: "Sabores e tabela por tipo", icon: Boxes },
       { href: "/clientes", label: "Clientes", hint: "Cadastro opcional", icon: Users },
@@ -47,6 +49,7 @@ export default async function MaisPage() {
     {
       label: "Consulta",
       links: [
+        { href: "/lotes", label: "Lotes", hint: "Saldos e resultados por lote", icon: Layers3 },
         { href: "/produtos", label: "Produtos", hint: "Catálogo, sabores e estoque", icon: Boxes },
         { href: "/relatorios", label: "Relatórios", hint: "Vendas, custos e meu lucro", icon: BarChart3 },
       ],

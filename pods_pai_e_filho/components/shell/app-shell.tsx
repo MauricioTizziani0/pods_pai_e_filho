@@ -7,6 +7,7 @@ import {
   Bookmark,
   Boxes,
   LayoutDashboard,
+  Layers3,
   LogOut,
   Menu,
   Package,
@@ -27,6 +28,7 @@ const adminSideNav = [
     items: [
       { href: "/inicio", label: "Dashboard", icon: LayoutDashboard },
       { href: "/estoque", label: "Estoque", icon: Package },
+      { href: "/lotes", label: "Lotes", icon: Layers3 },
       { href: "/produtos", label: "Produtos", icon: Boxes },
       { href: "/vendas", label: "Vendas", icon: Receipt },
       { href: "/clientes", label: "Clientes", icon: Users },
@@ -80,6 +82,7 @@ export function AppShell({
       items: [
         { href: "/inicio", label: "Início", icon: LayoutDashboard },
         { href: "/estoque", label: "Estoque", icon: Package },
+        { href: "/lotes", label: "Lotes", icon: Layers3 },
         { href: "/vendas", label: "Vendas", icon: Receipt },
         { href: "/repasses", label: "Financeiro", icon: Wallet },
       ],
@@ -106,6 +109,7 @@ export function AppShell({
         { href: "/estoque", label: "Estoque", icon: Package },
         { href: "/vendas", label: "Vendas", icon: Receipt },
         { href: "/repasses", label: "Financeiro", icon: Wallet },
+        { href: "/mais", label: "Mais", icon: Menu },
       ];
 
   return (
@@ -227,11 +231,14 @@ export function AppShell({
       </div>
 
       {/* ---------------- Bottom nav (mobile) ---------------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className={cn("mx-auto grid w-full max-w-lg px-1 pb-[env(safe-area-inset-bottom)]", profile.can_write ? "grid-cols-5" : "grid-cols-4")}>
+      <nav aria-label="Navegação mobile" className="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-border bg-card/95 backdrop-blur md:hidden">
+        <div className="mx-auto grid w-full max-w-lg grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
           {mobile.map((item) => {
             const active = item.emphasis
               ? pathname.startsWith("/vendas/nova")
+              : item.href === "/mais"
+                ? ["/mais", "/lotes", "/produtos", "/clientes", "/fiados", "/relatorios", "/configuracoes"].some((href) => isActive(pathname, href))
+                  || (profile.can_write && isActive(pathname, "/vendas"))
               : isActive(pathname, item.href);
             const Icon = item.icon;
             return (
@@ -240,8 +247,7 @@ export function AppShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "press relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
-                  item.emphasis && "-mt-4",
+                  "press relative flex h-16 min-w-0 flex-col items-center justify-end gap-1 pb-2 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Boxes, PackagePlus, Plus, Tag, Pencil, Trash2 } from "lucide-react";
 import { deleteProductAction, deleteVariantAction, savePriceAction, saveProductAction, saveVariantAction } from "@/lib/actions/catalog";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/lib/domain/flavors";
 import { formatBRL, moneyToInput, parseMoney } from "@/lib/format";
 import type { CatalogSnapshot, Product, ProductVariant } from "@/lib/types";
+import type { ProductStatusFilter } from "@/lib/data/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, TextArea } from "@/components/ui/field";
@@ -26,14 +27,18 @@ import { cn } from "@/lib/utils";
 
 export function ProductManager({
   catalog,
+  productStatus,
   canWrite,
   isAdmin,
 }: {
   catalog: CatalogSnapshot;
+  productStatus: ProductStatusFilter;
   canWrite: boolean;
   isAdmin: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -45,9 +50,17 @@ export function ProductManager({
   const [promotionName, setPromotionName] = useState("");
   const [promotionFeatures, setPromotionFeatures] = useState("");
   const [displayOrder, setDisplayOrder] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [iceFilter, setIceFilter] = useState<IceFilter>("all");
   const [flavorQuery, setFlavorQuery] = useState("");
+
+  function selectProductStatus(value: ProductStatusFilter) {
+    if (value === productStatus) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("status", value);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    });
+  }
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>, success: string) {
     setError(null);
@@ -64,17 +77,15 @@ export function ProductManager({
   }
 
   const types = catalog.customerTypes.filter((type) => type.active);
-  const visibleProducts = catalog.products
-    .filter((p) => filter === "all" || p.active === (filter === "active"))
-    .filter((product) => {
-      if (iceFilter === "all" && !flavorQuery.trim()) return true;
-      return catalog.variants.some(
-        (variant) =>
-          variant.product_id === product.id &&
-          matchesIceFilter(variant.is_ice, iceFilter) &&
-          matchesFlavorSearch(variant, flavorQuery),
-      );
-    });
+  const visibleProducts = catalog.products.filter((product) => {
+    if (iceFilter === "all" && !flavorQuery.trim()) return true;
+    return catalog.variants.some(
+      (variant) =>
+        variant.product_id === product.id &&
+        matchesIceFilter(variant.is_ice, iceFilter) &&
+        matchesFlavorSearch(variant, flavorQuery),
+    );
+  });
 
   return (
     <div className="grid w-full min-w-0 gap-5">
@@ -163,8 +174,8 @@ export function ProductManager({
         <div className="flex flex-wrap gap-2">
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar produtos">
             <span className="eyebrow">Produtos</span>
-            {([["all", "Todos"], ["active", "Ativos"], ["inactive", "Inativos"]] as const).map(([value, label]) => (
-              <Button key={value} variant={filter === value ? "secondary" : "ghost"} size="sm" onClick={() => setFilter(value)}>{label}</Button>
+            {([["active", "Ativos"], ["inactive", "Inativos"], ["all", "Todos"]] as const).map(([value, label]) => (
+              <Button key={value} variant={productStatus === value ? "secondary" : "ghost"} size="sm" disabled={pending} aria-pressed={productStatus === value} onClick={() => selectProductStatus(value)}>{label}</Button>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar sabores Ice">

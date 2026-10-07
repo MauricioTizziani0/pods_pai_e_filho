@@ -5,7 +5,7 @@ Controle de estoque, vendas, valores a receber, lucro e repasses da sociedade en
 ## Preparar
 
 1. Crie um projeto no [Supabase](https://database.new).
-2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_pods_init.sql`, `20261001150000_product_safety.sql`, `20261001160000_variant_is_ice.sql`, `20261002100000_consultas_cost_snapshots.sql`, `20261002110000_consultas_hide_credit_filter.sql` e `20261002120000_whatsapp_promotion.sql`.
+2. No SQL Editor, execute os arquivos de `supabase/migrations/` **em ordem crescente pelo nome**: `20261001140000_001_pods_init.sql`, `20261001150000_002_product_safety.sql`, `20261001160000_003_variant_is_ice.sql`, `20261002100000_004_consultas_cost_snapshots.sql`, `20261002110000_005_consultas_hide_credit_filter.sql`, `20261002120000_006_whatsapp_promotion.sql` e `20261007120000_007_purchase_batches.sql`.
 3. Copie `.env.example` para `.env.local` e preencha:
 
 ```env
@@ -35,12 +35,41 @@ O script inicial cadastra Pod 40k e Pod 30k, os sabores do 40k, o sabor Padrão 
 | Pod 30k | Normal | R$ 140,00 | R$ 115,00 | R$ 25,00 |
 | Pod 30k | Amigo | R$ 120,00 | R$ 115,00 | R$ 5,00 |
 
-Antes da primeira venda, lance a entrada de estoque em Estoque.
+Antes da primeira venda, registre uma compra em **Estoque > Nova compra**. Cada confirmação cria um lote novo e registra seus itens e custos históricos junto com as entradas de estoque.
+
+### Compras e lotes
+
+Em instalações existentes, execute `20261007120000_007_purchase_batches.sql` depois das migrations anteriores. Essa migration preserva vendas e movimentos antigos sem inventar uma origem; o saldo anterior permanece sem lote. Use **Estoque > Nova compra** para registrar cada compra independente. Use **Ajuste de estoque** somente para corrigir divergências físicas.
+
+Vendas consomem primeiro o estoque legado sem origem conhecida e depois os lotes em FIFO, respeitando produto e sabor. O custo de cada lote é guardado na compra e o custo da venda considera as unidades alocadas. Cancelar a venda devolve cada unidade ao lote original; os lotes sem saldo são finalizados automaticamente. A tela **Lotes** está disponível em modo somente leitura para CONSULTAS e mostra os indicadores do pai; o lucro do filho permanece exclusivo do ADMIN.
+
+ADMIN pode usar **Lotes > Associar estoque legado** para classificar saldos antigos sem alterar o estoque geral. Essa ação exige quantidade disponível e custo histórico conhecido; sem esse dado, mantenha as unidades sem lote.
+
+### Filtros iniciais
+
+**Dashboard** e **Relatórios** iniciam no lote aberto com a compra mais recente. Sem lote aberto, usam o finalizado mais recente; sem lotes válidos, usam **Todos os lotes**, incluindo o histórico sem lote. Empates usam criação, número do lote e identificador. Lotes cancelados não são selecionados automaticamente.
+
+A seleção fica na URL e é respeitada nas atualizações e na volta de uma venda à Dashboard. **Todos os lotes** permanece disponível. Período e demais filtros são combinados com o lote. Os valores financeiros usam as alocações existentes de cada item vendido; uma venda com dois lotes contribui apenas com sua parcela em cada lote. Estoque atual, custo do estoque e alertas continuam gerais e são identificados assim na tela.
+
+**Produtos** inicia com **Ativos**, mantendo **Inativos** e **Todos**. O status é aplicado na consulta, independentemente do estoque e dos lotes; um produto ativo sem saldo continua visível. Produtos inativos continuam incluídos no histórico de vendas e nos relatórios. Os padrões também se aplicam a CONSULTAS, com as permissões e a visão financeira do pai preservadas. Esta melhoria não exige uma nova migration.
+
+**Estoque** consulta somente saldos de produtos ativos, incluindo os esgotados. Produtos inativos e seus sabores não aparecem na listagem, nos totais exibidos ou nas movimentações recentes dessa tela. Pesquisas e filtros de Ice são preservados; os alertas continuam usando a soma das variações ativas de cada produto. Desativar e reativar invalida o cache existente, preservando saldos, lotes e todo o histórico consultado nas demais telas. A lista distingue ausência de produtos ativos de ausência de resultados para os filtros.
+
+Para conferir os filtros e as parcelas financeiras com dados simulados:
+
+```bash
+npm run check:batch-filters
+npm run check:batch-sales
+npm run check:financial-filters
+npm run check:product-filters
+npm run check:dashboard-filters
+npm run check:stock-visibility
+```
 
 ## Regras que o banco garante
 
 - Lucro do pai = repasse ao pai − preço de custo; lucro do filho = preço de venda − repasse. O custo, o repasse e o preço de venda são valores monetários `numeric`; lucros são calculados, não digitados.
-- Novas vendas exigem custo configurado e guardam snapshots do custo, repasse e preço de venda daquele momento. O custo de produtos e vendas antigos permanece sem informação até o administrador preenchê-lo; a aplicação não estima custos históricos.
+- Vendas de estoque sem lote exigem custo configurado; vendas de unidades compradas usam o custo histórico do lote. O custo, o repasse e o preço ficam salvos na venda. Custos antigos sem informação continuam desconhecidos; a aplicação não estima esses custos.
 - Estoque é a soma das movimentações e baixa na confirmação da venda, tenha o cliente pago ou não.
 - **A enviar ao pai agora** = repasse ainda não pago e (venda recebida ou fiado).
 - **Repasse futuro** = a receber, sem fiado, com repasse ainda não pago.
@@ -62,7 +91,7 @@ npm run check:finance
 
 ## Divulgação no WhatsApp
 
-Em instalações existentes, execute somente a nova migration `20261002120000_whatsapp_promotion.sql` no SQL Editor do Supabase antes de usar a divulgação. Ela adiciona as configurações sem alterar saldos, vendas, preços ou alertas de estoque baixo. Acesso de login ao aplicativo e chave pública do Supabase não permitem executar migrations.
+Em instalações existentes, execute somente a nova migration `20261002120000_006_whatsapp_promotion.sql` no SQL Editor do Supabase antes de usar a divulgação. Ela adiciona as configurações sem alterar saldos, vendas, preços ou alertas de estoque baixo. Acesso de login ao aplicativo e chave pública do Supabase não permitem executar migrations.
 
 O ADMIN configura o cabeçalho e o rodapé em **Configurações > Divulgação**. Em **Produtos > Informações para divulgação**, cadastra o nome comercial, os puffs aproximados, uma característica por linha e, opcionalmente, a ordem de exibição. Nome vazio usa o nome interno; características não cadastradas são omitidas. A migration não atribui marcas ou características aos produtos existentes. Puffs como `30000` aparecem como `30K Puffs`.
 

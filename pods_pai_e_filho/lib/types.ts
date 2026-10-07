@@ -96,6 +96,56 @@ export type StockMovement = {
   variant_name: string;
   variant_is_ice?: boolean;
   user_name: string | null;
+  batch_number?: number | null;
+};
+
+export type BatchOverview = {
+  batch_id: string;
+  batch_number: number;
+  purchase_date: string;
+  notes: string | null;
+  is_legacy: boolean;
+  status: "ABERTO" | "FINALIZADO" | "CANCELADO";
+  created_by: string | null;
+  created_at: string;
+  closed_at: string | null;
+  total_purchased: number;
+  quantity_sold: number;
+  quantity_remaining: number;
+  capital_invested: string;
+  capital_in_stock: string;
+  capital_recovered: string;
+  revenue: string;
+  revenue_received: string;
+  revenue_receivable: string;
+  transfer_total: string;
+  transfer_paid: string;
+  transfer_due_now: string;
+  transfer_future: string;
+  father_profit: string;
+  child_profit: string | null;
+  total_profit: string | null;
+  last_sale_date: string | null;
+  has_sales: boolean;
+  duration_days: number | null;
+};
+
+export type BatchItemOverview = {
+  batch_item_id: string;
+  batch_id: string;
+  batch_number: number;
+  purchase_date: string;
+  status: "ABERTO" | "FINALIZADO" | "CANCELADO";
+  product_id: string;
+  variant_id: string;
+  product_name: string;
+  variant_name: string;
+  quantity_purchased: number;
+  quantity_sold: number;
+  quantity_remaining: number;
+  unit_cost: string;
+  investment: string;
+  capital_in_stock: string;
 };
 
 export type SaleOverview = {
@@ -252,4 +302,14 @@ export type CatalogSnapshot = {
   prices: PriceRule[];
   customers: Customer[];
   stock: StockBalance[];
+  batchItems?: BatchItemOverview[];
+};
+
+export type SaleBatchAllocation = {
+  id: string;
+  sale_item_id: string;
+  quantity: number;
+  unit_cost: string;
+  reversed_at: string | null;
+  batch_number: number | null;
 };

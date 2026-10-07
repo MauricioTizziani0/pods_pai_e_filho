@@ -39,6 +39,72 @@ export async function registerStockMovementAction(input: {
   return { ok: true, id: data as string };
 }
 
+export async function createPurchaseAction(input: {
+  purchaseDate: string;
+  notes: string;
+  items: { variantId: string; quantity: number; unitCost: number }[];
+}): Promise<ActionResult> {
+  const access = await writerClient();
+  if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  if (!input.items.length || input.items.some((item) =>
+    !item.variantId || !Number.isInteger(item.quantity) || item.quantity <= 0 ||
+    !Number.isFinite(item.unitCost) || item.unitCost < 0
+  )) {
+    return { ok: false, message: "Informe ao menos um item, com quantidade e custo válidos." };
+  }
+
+  const { data, error } = await access.supabase.rpc("create_purchase", {
+    payload: {
+      purchase_date: input.purchaseDate,
+      notes: input.notes.trim() || null,
+      items: input.items.map((item) => ({
+        variant_id: item.variantId,
+        quantity: item.quantity,
+        unit_cost: item.unitCost,
+      })),
+    },
+  });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidateCommerce();
+  return { ok: true, id: data as string };
+}
+
+export async function createLegacyBatchAction(input: {
+  notes: string;
+  items: { variantId: string; quantity: number; unitCost: number }[];
+}): Promise<ActionResult> {
+  const access = await writerClient();
+  if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  if (!input.items.length || input.items.some((item) =>
+    !item.variantId || !Number.isInteger(item.quantity) || item.quantity <= 0 ||
+    !Number.isFinite(item.unitCost) || item.unitCost < 0
+  )) {
+    return { ok: false, message: "Informe quantidade e custo histórico conhecido para cada sabor." };
+  }
+  const { data, error } = await access.supabase.rpc("create_legacy_batch", {
+    payload: {
+      notes: input.notes.trim() || null,
+      items: input.items.map((item) => ({
+        variant_id: item.variantId,
+        quantity: item.quantity,
+        unit_cost: item.unitCost,
+      })),
+    },
+  });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidateCommerce();
+  return { ok: true, id: data as string };
+}
+
+export async function cancelPurchaseBatchAction(batchId: string): Promise<ActionResult> {
+  const access = await writerClient();
+  if (access.error || !access.supabase) return { ok: false, message: access.error ?? "Sem permissão." };
+  const { error } = await access.supabase.rpc("cancel_purchase_batch", { p_batch_id: batchId });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidateCommerce();
+  return { ok: true, id: batchId };
+}
+
 export async function registerStockCountAction(input: {
   notes: string;
   lines: { variantId: string; physicalQuantity: number }[];
