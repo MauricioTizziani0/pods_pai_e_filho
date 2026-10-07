@@ -40,7 +40,7 @@ export function SignUpForm() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/inicio`,
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/inicio`,
         data: { full_name: fullName.trim() },
       },
     });

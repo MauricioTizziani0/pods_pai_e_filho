@@ -1,13 +1,13 @@
 "use client";
 
 import { LogIn } from "lucide-react";
+import { isAuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Notice } from "@/components/feedback/notice";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm() {
@@ -15,27 +15,47 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-    const supabase = createClient();
+    if (isLoading) return;
     setIsLoading(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (signInError) {
-      setError("E-mail ou senha incorretos.");
+      if (signInError) throw signInError;
+      if (!data.session) {
+        setError("Não foi possível iniciar a sessão. Tente novamente.");
+        return;
+      }
+
+      // A nova requisição lê os cookies da sessão e evita redirecionamentos pré-carregados.
+      window.location.assign("/inicio");
+    } catch (loginError: unknown) {
+      if (isAuthError(loginError)) {
+        if (loginError.code === "email_not_confirmed") {
+          setError("Confirme seu e-mail pelo link recebido antes de entrar.");
+        } else if (loginError.code === "invalid_credentials") {
+          setError("E-mail ou senha incorretos.");
+        } else if (loginError.status === 429) {
+          setError("Muitas tentativas de acesso. Aguarde um pouco e tente novamente.");
+        } else if (loginError.status === 0 || (loginError.status ?? 0) >= 500) {
+          setError("Não foi possível conectar ao serviço de acesso. Tente novamente em instantes.");
+        } else {
+          setError("Não foi possível entrar. Tente novamente.");
+        }
+      } else {
+        setError("Não foi possível conectar ao serviço de acesso. Verifique sua conexão e tente novamente.");
+      }
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    router.push("/inicio");
-    router.refresh();
   };
 
   return (
