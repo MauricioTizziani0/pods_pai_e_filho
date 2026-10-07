@@ -53,7 +53,9 @@ export function ConsultasDashboard({
       </header>
 
       {batchNotice ? <Notice>{batchNotice}</Notice> : null}
-      <DashboardFilters key={currentUrl} {...filters} />
+      <div className="order-last md:order-none">
+        <DashboardFilters key={currentUrl} {...filters} />
+      </div>
 
       <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="A receber agora" value={n(summary.transfer_due_now)} icon={Send} featured hint={`${summary.due_now_sales} venda(s) · com repasse pendente`} href={filters.batchValue === "todos" ? "/repasses" : undefined} />

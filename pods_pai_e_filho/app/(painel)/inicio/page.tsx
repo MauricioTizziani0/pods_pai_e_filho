@@ -80,7 +80,9 @@ export default async function InicioPage({
       <div className="grid w-full min-w-0 gap-4">
         <PageHeading title="Dashboard" description={`${batchFilter.label} · ${period.label}`} />
         {batchNotice ? <Notice>{batchNotice}</Notice> : null}
-        <DashboardFilters key={currentUrl} {...filters} />
+        <div className="order-last md:order-none">
+          <DashboardFilters key={currentUrl} {...filters} />
+        </div>
         <Notice>{dashboard.message}</Notice>
       </div>
     );
@@ -93,7 +95,9 @@ export default async function InicioPage({
         <div className="grid w-full min-w-0 gap-4">
           <PageHeading title="Início" description={`${batchFilter.label} · ${period.label}`} />
           {batchNotice ? <Notice>{batchNotice}</Notice> : null}
-          <DashboardFilters key={currentUrl} {...filters} />
+          <div className="order-last md:order-none">
+            <DashboardFilters key={currentUrl} {...filters} />
+          </div>
           <Notice>{financial.message}</Notice>
         </div>
       );
@@ -131,7 +135,9 @@ export default async function InicioPage({
       />
 
       {batchNotice ? <Notice>{batchNotice}</Notice> : null}
-      <DashboardFilters key={currentUrl} {...filters} />
+      <div className="order-last md:order-none">
+        <DashboardFilters key={currentUrl} {...filters} />
+      </div>
 
       {/* Indicadores principais */}
       <section className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
